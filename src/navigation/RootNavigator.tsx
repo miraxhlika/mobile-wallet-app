@@ -44,7 +44,11 @@ export function RootNavigator() {
       <Stack.Screen
         name="TransactionDetails"
         component={TransactionDetailsScreen}
-        options={{ title: "Transaction Details" }}
+        options={{
+          title: "",
+          headerStyle: { backgroundColor: "#222222" },
+          headerTintColor: "#EFF0F4",
+        }}
       />
       <Stack.Screen
         name="SendPayoutForm"

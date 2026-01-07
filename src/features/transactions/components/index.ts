@@ -19,7 +19,7 @@ export type {
   TransactionDetailsRow,
 } from "./TransactionDetailsCard";
 
-export { formatDateMDY, groupTransactionsByMonth } from "./utils";
+export { formatDateMDY, formatDateTimeMDY, groupTransactionsByMonth } from "./utils";
 export type { TransactionSection } from "./utils";
 
 
