@@ -4,39 +4,29 @@
 
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text, View, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 
 import type { TabParamList } from "./types";
 import { HomeScreen } from "../features/wallet/HomeScreen";
-import { TransactionsScreen } from "../features/transactions/TransactionsScreen";
+import { CardsScreen } from "../features/cards/CardsScreen";
 import { InfoScreen } from "../features/info/InfoScreen";
+import {
+  WalletTabIcon,
+  CardTabIcon,
+  SettingsTabIcon,
+} from "../components/icons";
 
 const Tab = createBottomTabNavigator<TabParamList>();
-
-// Simple icon components (replace with proper icons later)
-function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const iconMap: Record<string, string> = {
-    Home: "🏠",
-    Transactions: "📋",
-    Info: "ℹ️",
-  };
-
-  return (
-    <View style={styles.iconContainer}>
-      <Text style={[styles.icon, focused && styles.iconFocused]}>
-        {iconMap[name] || "•"}
-      </Text>
-    </View>
-  );
-}
 
 export function TabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: true,
-        tabBarActiveTintColor: "#3B82F6",
-        tabBarInactiveTintColor: "#6B7280",
+        headerStyle: { backgroundColor: "#222222" },
+        headerTintColor: "#EFF0F4",
+        tabBarActiveTintColor: "#EFF0F4",
+        tabBarInactiveTintColor: "#9E9FA6",
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabLabel,
       }}
@@ -45,19 +35,29 @@ export function TabNavigator() {
         name="Home"
         component={HomeScreen}
         options={{
+          headerShown: false,
           title: "Wallet",
+          tabBarLabel: "Wallet",
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="Home" focused={focused} />
+            <View style={styles.iconContainer}>
+              <WalletTabIcon
+                size={22}
+                color={focused ? "#EFF0F4" : "#9E9FA6"}
+              />
+            </View>
           ),
         }}
       />
       <Tab.Screen
-        name="Transactions"
-        component={TransactionsScreen}
+        name="Cards"
+        component={CardsScreen}
         options={{
-          title: "Transactions",
+          title: "",
+          tabBarLabel: "Cards",
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="Transactions" focused={focused} />
+            <View style={styles.iconContainer}>
+              <CardTabIcon size={22} color={focused ? "#EFF0F4" : "#9E9FA6"} />
+            </View>
           ),
         }}
       />
@@ -65,9 +65,15 @@ export function TabNavigator() {
         name="Info"
         component={InfoScreen}
         options={{
-          title: "Info & Limits",
+          title: "Settings",
+          tabBarLabel: "Settings",
           tabBarIcon: ({ focused }) => (
-            <TabIcon name="Info" focused={focused} />
+            <View style={styles.iconContainer}>
+              <SettingsTabIcon
+                size={22}
+                color={focused ? "#EFF0F4" : "#9E9FA6"}
+              />
+            </View>
           ),
         }}
       />
@@ -77,9 +83,14 @@ export function TabNavigator() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: "#fff",
-    borderTopColor: "#E5E7EB",
-    paddingTop: 4,
+    backgroundColor: "#434447",
+    borderTopColor: "rgba(255,255,255,0.10)",
+    paddingTop: 10,
+    paddingBottom: 10,
+    height: 78,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    overflow: "hidden",
   },
   tabLabel: {
     fontSize: 12,
@@ -88,12 +99,5 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: "center",
     justifyContent: "center",
-  },
-  icon: {
-    fontSize: 20,
-    opacity: 0.6,
-  },
-  iconFocused: {
-    opacity: 1,
   },
 });

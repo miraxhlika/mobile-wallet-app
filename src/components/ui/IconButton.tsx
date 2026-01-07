@@ -21,6 +21,7 @@ export interface IconButtonProps extends Omit<PressableProps, "children"> {
   size?: IconButtonSize;
   className?: string;
   iconContainerClassName?: string;
+  labelClassName?: string;
 }
 
 const VARIANT_CLASS: Record<IconButtonVariant, string> = {
@@ -42,6 +43,7 @@ function IconButtonImpl({
   disabled,
   className,
   iconContainerClassName,
+  labelClassName,
   style,
   accessibilityLabel,
   accessibilityHint,
@@ -85,7 +87,7 @@ function IconButtonImpl({
       {label ? (
         <AppText
           variant="caption"
-          className="mt-2 text-text-secondary"
+          className={cn("mt-2 text-text-secondary", labelClassName)}
           numberOfLines={1}
         >
           {label}

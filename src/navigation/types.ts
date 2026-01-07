@@ -13,7 +13,7 @@ import type { PayoutRequest } from '../types';
 
 export type TabParamList = {
   Home: undefined;
-  Transactions: undefined;
+  Cards: undefined;
   Info: undefined;
 };
 
@@ -23,6 +23,7 @@ export type TabParamList = {
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<TabParamList>;
+  Transactions: undefined;
   TransactionDetails: { transactionId: string };
   SendPayoutForm: undefined;
   SendPayoutReview: { payoutData: PayoutRequest };
@@ -40,9 +41,11 @@ export type HomeScreenProps = CompositeScreenProps<
   NativeStackScreenProps<RootStackParamList>
 >;
 
-export type TransactionsScreenProps = CompositeScreenProps<
-  BottomTabScreenProps<TabParamList, 'Transactions'>,
-  NativeStackScreenProps<RootStackParamList>
+export type CardsScreenProps = BottomTabScreenProps<TabParamList, 'Cards'>;
+
+export type TransactionsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  'Transactions'
 >;
 
 export type InfoScreenProps = BottomTabScreenProps<TabParamList, 'Info'>;

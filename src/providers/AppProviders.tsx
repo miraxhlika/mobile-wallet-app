@@ -58,7 +58,7 @@ function HydrationGate({ children }: { children: React.ReactNode }) {
   if (!isReady) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#FF2C55" />
       </View>
     );
   }
@@ -90,6 +90,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#222222",
   },
 });

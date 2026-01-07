@@ -11,6 +11,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import type { RootStackParamList } from "./types";
 import { TabNavigator } from "./TabNavigator";
+import { TransactionsScreen } from "../features/transactions/TransactionsScreen";
 import { TransactionDetailsScreen } from "../features/transactions/TransactionDetailsScreen";
 import { SendPayoutFormScreen } from "../features/payouts/SendPayoutFormScreen";
 import { SendPayoutReviewScreen } from "../features/payouts/SendPayoutReviewScreen";
@@ -30,6 +31,15 @@ export function RootNavigator() {
         name="MainTabs"
         component={TabNavigator}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Transactions"
+        component={TransactionsScreen}
+        options={{
+          title: "",
+          headerStyle: { backgroundColor: "#222222" },
+          headerTintColor: "#EFF0F4",
+        }}
       />
       <Stack.Screen
         name="TransactionDetails"
