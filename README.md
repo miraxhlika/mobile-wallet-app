@@ -150,59 +150,17 @@ src/
 
 ## API Assumptions
 
-The app assumes the following API response shapes:
+The app talks to the **local mock API server** in `./mock-server` and maps the
+wire shapes into internal domain types (`Balance`, `Transaction`, `Payout*`).
 
-### GET /balances
-
-```json
-[
-  {
-    "currency": "USD",
-    "available": "1000.00",
-    "pending": "50.00"
-  }
-]
-```
-
-### GET /transactions
-
-Query params: `cursor`, `limit`, `type`, `status`, `currency`
-
-```json
-{
-  "data": [
-    {
-      "id": "tx_123",
-      "type": "credit|debit|payout|refund",
-      "status": "pending|completed|failed|cancelled",
-      "amount": "100.00",
-      "currency": "USD",
-      "description": "Payment received",
-      "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-01T00:00:00Z",
-      "metadata": {}
-    }
-  ],
-  "nextCursor": "cursor_abc",
-  "hasMore": true
-}
-```
-
-### GET /transactions/:id
-
-Returns a single transaction object (same shape as above).
-
-### POST /payouts
+### POST /auth/login
 
 Request:
 
 ```json
 {
-  "amount": "100.00",
-  "currency": "USD",
-  "recipientName": "John Doe",
-  "recipientAccount": "john@example.com",
-  "description": "Payment for services"
+  "email": "user@example.com",
+  "password": "password123"
 }
 ```
 
@@ -210,17 +168,133 @@ Response:
 
 ```json
 {
-  "id": "payout_123",
-  "status": "pending|processing|completed|failed",
-  "amount": "100.00",
-  "currency": "USD",
-  "recipientName": "John Doe",
-  "recipientAccount": "john@example.com",
-  "description": "Payment for services",
-  "createdAt": "2024-01-01T00:00:00Z",
-  "estimatedArrival": "2024-01-03T00:00:00Z"
+  "auth": {
+    "access_token": "mock_access_token_1_1736246400000",
+    "access_token_expire": "2025-01-15T10:30:00.000Z",
+    "refresh_token": "mock_refresh_token_1_1736246400000",
+    "refresh_token_expire": "2025-02-14T10:30:00.000Z"
+  },
+  "tfa": {
+    "enabled": false,
+    "type": null
+  }
 }
 ```
+
+### GET /balances
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "user_id": "1",
+      "currency_id": 1,
+      "available_balance": "1250.50",
+      "current_balance": "1250.50",
+      "reserved_balance": "0.00",
+      "reference_number": "WAL001"
+    }
+  ],
+  "message": [],
+  "status": 200,
+  "type": "general_success"
+}
+```
+
+The client maps each wallet into a simpler `Balance`:
+`{ currency: "USD", available: "1250.50", pending: "0.00" }`.
+
+### GET /transactions
+
+Query params:
+
+- `page` (default: `1`)
+- `per_page` (default: `15`)
+- `wallet_id`
+- `type` (`top-up` \| `withdrawal`)
+- `status` (`pending` \| `completed` \| `failed`)
+- `date_from`, `date_to`
+- `search` (matches `reason`, case-insensitive)
+
+Response:
+
+```json
+{
+  "data": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 5,
+    "last_page": 1,
+    "has_more": false,
+    "items": [
+      {
+        "wallet_id": 1,
+        "type": "top-up",
+        "status": "completed",
+        "reason": "Salary",
+        "amount": 1200,
+        "currency_id": 1,
+        "created_at": "2024-01-15T10:30:00Z"
+      }
+    ]
+  },
+  "message": "Transactions retrieved successfully",
+  "status": 200,
+  "type": "general_success"
+}
+```
+
+The client:
+
+- maps `type: "top-up" | "withdrawal"` into domain types (`credit` / `payout`)
+- maps `amount` into a formatted string
+- derives a stable `id` for seed transactions that have no `id` in the mock data
+- exposes a cursor-like API (`nextCursor`, `hasMore`) on top of `current_page`/`has_more`.
+
+> The mock server does **not** expose `GET /transactions/:id`; the client
+> emulates it by paginating over `/transactions` until it finds the target item.
+
+### POST /payouts
+
+Request:
+
+```json
+{
+  "wallet_id": 1,
+  "provider": "bank",
+  "amount": 100.0,
+  "currency_id": 1,
+  "bank_id": 1
+}
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": 1730000000000,
+    "status": "pending",
+    "amount": 100.0,
+    "provider": "bank",
+    "wallet_id": 1,
+    "currency_id": 1,
+    "created_at": "2024-01-15T10:30:00.000Z"
+  },
+  "message": "Withdrawal initiated successfully",
+  "status": 200,
+  "type": "general_success"
+}
+```
+
+The app-level `PayoutRequest` is intentionally simpler
+(`amount`, `currency`, `recipientName`, `recipientAccount`, `description`).
+The client maps that into the mock server shape (selecting a `wallet_id`,
+`currency_id`, `provider`, and `bank_id`) and then back into a domain-level
+`PayoutResponse`.
 
 ## Pagination
 
