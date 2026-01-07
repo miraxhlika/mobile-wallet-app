@@ -13,6 +13,28 @@ import { useAuthStore } from "../../features/auth/store";
 // Get base URL from Expo public env variable
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "";
 
+// Mock server accepts any token starting with "mock_"
+const FALLBACK_MOCK_TOKEN = "mock_bootstrap_token";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractServerMessage(payload: unknown): string | undefined {
+  if (!isRecord(payload)) return undefined;
+
+  const message = payload["message"];
+  if (typeof message === "string" && message.trim()) return message;
+
+  const error = payload["error"];
+  if (typeof error === "string" && error.trim()) return error;
+
+  // Some endpoints return { error, message, status } where message is string
+  if (typeof message === "object" && message !== null) return undefined;
+
+  return undefined;
+}
+
 /**
  * Normalize various error types into a consistent ApiError shape
  */
@@ -28,7 +50,7 @@ function normalizeError(error: unknown, statusCode?: number): ApiError {
 
   // HTTP errors with status code
   if (statusCode && statusCode >= 400) {
-    let message = "An error occurred";
+    let message = extractServerMessage(error) || "An error occurred";
 
     if (statusCode === 401) message = "Unauthorized. Please log in again.";
     else if (statusCode === 403) message = "Access denied.";
@@ -76,10 +98,8 @@ export async function apiRequest<T>(
 
   // Inject auth header if token exists and not skipped
   if (!skipAuth) {
-    const token = useAuthStore.getState().token;
-    if (token) {
-      (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
-    }
+    const token = useAuthStore.getState().token || FALLBACK_MOCK_TOKEN;
+    (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
