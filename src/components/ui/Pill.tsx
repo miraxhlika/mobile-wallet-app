@@ -7,6 +7,7 @@ import React, { memo } from "react";
 import type { ViewProps } from "react-native";
 import { View } from "react-native";
 
+import type { AppTextVariant } from "./AppText";
 import { AppText } from "./AppText";
 import { cn } from "./utils";
 
@@ -15,6 +16,7 @@ export type PillTone = "success" | "warning" | "danger" | "muted" | "info";
 export interface PillProps extends Omit<ViewProps, "children"> {
   text: string;
   tone?: PillTone;
+  textVariant?: AppTextVariant;
   className?: string;
   textClassName?: string;
 }
@@ -38,6 +40,7 @@ const TONE_TEXT: Record<PillTone, string> = {
 function PillImpl({
   text,
   tone = "muted",
+  textVariant = "caption",
   className,
   textClassName,
   ...props
@@ -52,7 +55,7 @@ function PillImpl({
       )}
     >
       <AppText
-        variant="caption"
+        variant={textVariant}
         className={cn("font-semibold", TONE_TEXT[tone], textClassName)}
         numberOfLines={1}
       >

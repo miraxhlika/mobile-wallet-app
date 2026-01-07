@@ -14,6 +14,17 @@ export function formatDateMDY(date: Date): string {
   }).format(date);
 }
 
+export function formatDateTimeMDY(date: Date): string {
+  // MM/DD/YYYY, hh:mm AM/PM
+  const datePart = formatDateMDY(date);
+  const timePart = new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+  return `${datePart} ${timePart}`;
+}
+
 export function groupTransactionsByMonth(transactions: Transaction[]): TransactionSection[] {
   const groups = new Map<string, Transaction[]>();
 
