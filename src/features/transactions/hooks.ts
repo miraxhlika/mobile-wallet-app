@@ -11,7 +11,6 @@
 import {
   useInfiniteQuery,
   useQuery,
-  useQueryClient,
 } from "@tanstack/react-query";
 import { fetchTransactions, fetchTransactionById } from "../../services/api";
 import type {
@@ -21,8 +20,7 @@ import type {
   ApiError,
 } from "../../types";
 
-const PAGE_SIZE = 10;
-const MAX_TRANSACTIONS = 50;
+const PAGE_SIZE = 20;
 
 export const TRANSACTIONS_QUERY_KEY = ["transactions"] as const;
 export const TRANSACTION_DETAIL_QUERY_KEY = ["transaction"] as const;
@@ -44,7 +42,6 @@ type InfiniteTransactionsPage = PaginatedTransactionsResponse & {
  * Caps total fetched transactions at 50.
  */
 export function useInfiniteTransactions(filters?: TransactionFilters) {
-  const queryClient = useQueryClient();
   const queryKey = [...TRANSACTIONS_QUERY_KEY, filters] as const;
 
   const query = useInfiniteQuery<InfiniteTransactionsPage, ApiError>({
@@ -55,18 +52,7 @@ export function useInfiniteTransactions(filters?: TransactionFilters) {
           ? pageParam
           : 1;
 
-      // Prevent ever loading more than MAX_TRANSACTIONS by shrinking the final page size.
-      const cached = queryClient.getQueryData<{
-        pages?: InfiniteTransactionsPage[];
-      }>(queryKey);
-      const totalLoadedSoFar =
-        cached?.pages?.reduce(
-          (sum, p) => sum + (p?.items?.length ?? p?.data?.length ?? 0),
-          0
-        ) ?? 0;
-
-      const remaining = Math.max(0, MAX_TRANSACTIONS - totalLoadedSoFar);
-      const perPage = Math.max(1, Math.min(PAGE_SIZE, remaining || PAGE_SIZE));
+      const perPage = PAGE_SIZE;
 
       const resp = await fetchTransactions({
         // `fetchTransactions` already uses page/per_page under the hood; we pass page number as cursor.
@@ -87,16 +73,9 @@ export function useInfiniteTransactions(filters?: TransactionFilters) {
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      const totalLoaded = allPages.reduce(
-        (sum, p) => sum + (p.items?.length ?? p.data.length),
-        0
-      );
-
       // Next page only when:
       // - mock server says there's more (`has_more`)
-      // - and we haven't reached the max cap
-      if (!lastPage.has_more || totalLoaded >= MAX_TRANSACTIONS)
-        return undefined;
+      if (!lastPage.has_more) return undefined;
 
       return lastPage.page + 1;
     },

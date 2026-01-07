@@ -103,8 +103,9 @@ function mapTransactionApiToDomain(tx: TransactionApi): Transaction {
   // Domain mapping:
   // - top-up => credit
   // - withdrawal => payout
+  // - fee => debit
   const domainType: Transaction["type"] =
-    tx.type === "top-up" ? "credit" : "payout";
+    tx.type === "top-up" ? "credit" : tx.type === "fee" ? "debit" : "payout";
 
   const absAmount = Math.abs(tx.amount);
 
@@ -116,6 +117,8 @@ function mapTransactionApiToDomain(tx: TransactionApi): Transaction {
         ? "completed"
         : tx.status === "failed"
         ? "failed"
+        : tx.status === "cancelled"
+        ? "cancelled"
         : "pending",
     amount: toMoneyString(absAmount),
     currency,
@@ -217,8 +220,13 @@ function parseTransactionsResponse(raw: unknown): {
     }
 
     // Validate mock server enums
-    if (type !== "top-up" && type !== "withdrawal") continue;
-    if (status !== "pending" && status !== "completed" && status !== "failed")
+    if (type !== "top-up" && type !== "withdrawal" && type !== "fee") continue;
+    if (
+      status !== "pending" &&
+      status !== "completed" &&
+      status !== "failed" &&
+      status !== "cancelled"
+    )
       continue;
 
     // Optional fields
@@ -280,9 +288,9 @@ export async function fetchTransactions(
     per_page: String(perPage),
   };
 
-  if (filters?.walletId !== undefined) query.wallet_id = String(filters.walletId);
-  if (filters?.type) query.type = filters.type;
-  if (filters?.status) query.status = filters.status;
+  if (filters?.walletIds?.length) query.wallet_id = filters.walletIds.join(",");
+  if (filters?.types?.length) query.type = filters.types.join(",");
+  if (filters?.statuses?.length) query.status = filters.statuses.join(",");
   if (filters?.dateFrom) query.date_from = filters.dateFrom;
   if (filters?.dateTo) query.date_to = filters.dateTo;
   if (filters?.search) query.search = filters.search;

@@ -52,13 +52,13 @@ export interface TransactionFilters {
    * Mock server supports filtering by wallet_id (not currency_id directly).
    * If you only have a currency, the client may translate it to a wallet_id.
    */
-  walletId?: number;
+  walletIds?: number[];
 
   /** Mock server transaction type */
-  type?: TransactionTypeApi;
+  types?: TransactionTypeApi[];
 
   /** Mock server transaction status */
-  status?: TransactionStatusApi;
+  statuses?: TransactionStatusApi[];
 
   /** Full-text search on `reason` (case-insensitive) */
   search?: string;
@@ -168,8 +168,8 @@ export type BalancesResponseApi = ApiEnvelope<WalletBalanceApi[]>;
 // Transactions (Mock API)
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type TransactionTypeApi = "top-up" | "withdrawal";
-export type TransactionStatusApi = "pending" | "completed" | "failed";
+export type TransactionTypeApi = "top-up" | "withdrawal" | "fee";
+export type TransactionStatusApi = "pending" | "completed" | "failed" | "cancelled";
 
 export interface TransactionApi {
   /**

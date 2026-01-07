@@ -6,15 +6,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        bg: "#0B0E14",
-        surface: "#141823",
-        "surface-elevated": "#1A2030",
+        // Figma palette
+        bg: "#222222",
+        surface: "#2E2E31",
+        "surface-elevated": "#2E2E31",
 
-        primary: "#FF2D55",
-        "primary-strong": "#FF0A3D",
+        primary: "#FF2C55",
+        "primary-strong": "#FF2C55",
 
-        "text-primary": "#F5F7FF",
-        "text-secondary": "#A7AFC2",
+        "text-primary": "#EFF0F4",
+        "text-secondary": "#9E9FA6",
         muted: "#6B7280",
 
         border: "rgba(255,255,255,0.10)",
