@@ -18,6 +18,7 @@ import { QueryProvider } from "./QueryProvider";
 import { ToastProvider } from "../components";
 import { useAuthStore } from "../features/auth";
 import { useSettingsStore } from "../features/wallet";
+import { login } from "../services/api";
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -30,14 +31,29 @@ function HydrationGate({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const hydrateAuth = useAuthStore((s) => s.hydrate);
   const hydrateSettings = useSettingsStore((s) => s.hydrate);
+  const setToken = useAuthStore((s) => s.setToken);
 
   useEffect(() => {
     async function hydrate() {
       await Promise.all([hydrateAuth(), hydrateSettings()]);
+
+      // No login UI in this project: when no token exists, bootstrap a mock token
+      // via the mock server's login endpoint.
+      const currentToken = useAuthStore.getState().token;
+      if (!currentToken) {
+        try {
+          const tokens = await login("user@example.com", "password123");
+          await setToken(tokens.accessToken);
+        } catch {
+          // If login fails (e.g., API unreachable), proceed anyway.
+          // The API client will still attach a fallback `mock_*` token.
+        }
+      }
+
       setIsReady(true);
     }
     hydrate();
-  }, [hydrateAuth, hydrateSettings]);
+  }, [hydrateAuth, hydrateSettings, setToken]);
 
   if (!isReady) {
     return (
