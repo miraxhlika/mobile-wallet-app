@@ -29,6 +29,7 @@ export type RootStackParamList = {
   SendPayoutReview: { payoutData: PayoutRequest };
   SendPayoutSuccess: { payout: PayoutResponse };
   AddFunds: undefined;
+  Limits: undefined;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,7 +49,10 @@ export type TransactionsScreenProps = NativeStackScreenProps<
   'Transactions'
 >;
 
-export type InfoScreenProps = BottomTabScreenProps<TabParamList, 'Info'>;
+export type InfoScreenProps = CompositeScreenProps<
+  BottomTabScreenProps<TabParamList, "Info">,
+  NativeStackScreenProps<RootStackParamList>
+>;
 
 // Stack screen props
 export type TransactionDetailsScreenProps = NativeStackScreenProps<
@@ -74,5 +78,10 @@ export type SendPayoutSuccessScreenProps = NativeStackScreenProps<
 export type AddFundsScreenProps = NativeStackScreenProps<
   RootStackParamList,
   'AddFunds'
+>;
+
+export type LimitsScreenProps = NativeStackScreenProps<
+  RootStackParamList,
+  "Limits"
 >;
 

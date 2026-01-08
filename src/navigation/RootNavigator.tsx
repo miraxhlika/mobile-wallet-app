@@ -17,6 +17,7 @@ import { SendPayoutFormScreen } from "../features/payouts/SendPayoutFormScreen";
 import { SendPayoutReviewScreen } from "../features/payouts/SendPayoutReviewScreen";
 import { SendPayoutSuccessScreen } from "../features/payouts/SendPayoutSuccessScreen";
 import { AddFundsScreen } from "../features/wallet/AddFundsScreen";
+import { LimitsScreen } from "../features/info";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -90,6 +91,17 @@ export function RootNavigator() {
         component={AddFundsScreen}
         options={{
           title: "",
+          headerStyle: { backgroundColor: "#222222" },
+          headerTintColor: "#EFF0F4",
+          headerTitleStyle: { color: "#EFF0F4" },
+          headerShadowVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="Limits"
+        component={LimitsScreen}
+        options={{
+          title: "Limits & Fees",
           headerStyle: { backgroundColor: "#222222" },
           headerTintColor: "#EFF0F4",
           headerTitleStyle: { color: "#EFF0F4" },

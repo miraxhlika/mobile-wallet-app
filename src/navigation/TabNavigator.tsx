@@ -65,7 +65,7 @@ export function TabNavigator() {
         name="Info"
         component={InfoScreen}
         options={{
-          title: "Settings",
+          title: "",
           tabBarLabel: "Settings",
           tabBarIcon: ({ focused }) => (
             <View style={styles.iconContainer}>

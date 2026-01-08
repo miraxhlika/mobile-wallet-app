@@ -8,6 +8,7 @@ import { Pressable, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 
 import { AppText, cn, HIT_SLOP_44 } from "../ui";
+import { CheckIcon, CopyIcon } from "../icons";
 
 export interface CopyRowProps {
   label: string;
@@ -15,6 +16,7 @@ export interface CopyRowProps {
   onCopied?: (value: string) => void;
   className?: string;
   accessibilityLabel?: string;
+  confirmDurationMs?: number;
 }
 
 function CopyRowImpl({
@@ -23,14 +25,28 @@ function CopyRowImpl({
   onCopied,
   className,
   accessibilityLabel,
+  confirmDurationMs = 3000,
 }: CopyRowProps) {
+  const [didCopy, setDidCopy] = React.useState(false);
+  const resetTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleCopy = useCallback(async () => {
     await Clipboard.setStringAsync(value);
     onCopied?.(value);
-  }, [onCopied, value]);
+    setDidCopy(true);
+
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = setTimeout(() => setDidCopy(false), confirmDurationMs);
+  }, [confirmDurationMs, onCopied, value]);
+
+  React.useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
 
   return (
-    <View className={cn("flex-row items-center justify-between py-3", className)}>
+    <View className={cn("flex-row items-center justify-between py-4", className)}>
       <View className="flex-1 pr-3">
         <AppText variant="caption" className="text-text-secondary">
           {label}
@@ -42,11 +58,17 @@ function CopyRowImpl({
       <Pressable
         onPress={handleCopy}
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel ?? `Copy ${label}`}
+        accessibilityLabel={
+          accessibilityLabel ?? (didCopy ? `${label} copied` : `Copy ${label}`)
+        }
         hitSlop={HIT_SLOP_44}
-        className="rounded-pill bg-surface-elevated px-3 py-2"
+        className="p-2"
       >
-        <AppText variant="label">⧉</AppText>
+        {didCopy ? (
+          <CheckIcon size={20} color="#EFF0F4" />
+        ) : (
+          <CopyIcon size={20} color="#EFF0F4" />
+        )}
       </Pressable>
     </View>
   );

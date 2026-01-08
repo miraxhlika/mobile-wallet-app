@@ -10,6 +10,7 @@ import { Pressable, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 
 import { AppText, Card, cn, HIT_SLOP_44 } from "../../../components";
+import { CheckIcon, CopyIcon } from "../../../components/icons";
 
 export interface TransactionDetailsRow {
   label: string;
@@ -33,6 +34,15 @@ function TransactionDetailsCardImpl({
   className,
   showDividers = true,
 }: TransactionDetailsCardProps) {
+  const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+  const resetTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
+
   return (
     <Card variant="elevated" className={className}>
       {title ? (
@@ -73,13 +83,25 @@ function TransactionDetailsCardImpl({
                     onPress={async () => {
                       await Clipboard.setStringAsync(r.value);
                       r.onCopy?.();
+                      const key = `${r.label}-${idx}`;
+                      setCopiedKey(key);
+                      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+                      resetTimerRef.current = setTimeout(() => setCopiedKey(null), 3000);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Copy ${r.label}`}
+                    accessibilityLabel={
+                      copiedKey === `${r.label}-${idx}`
+                        ? `${r.label} copied`
+                        : `Copy ${r.label}`
+                    }
                     hitSlop={HIT_SLOP_44}
-                    className="rounded-pill bg-surface-elevated px-3 py-2"
+                    className="p-2"
                   >
-                    <AppText variant="label">⧉</AppText>
+                    {copiedKey === `${r.label}-${idx}` ? (
+                      <CheckIcon size={20} color="#EFF0F4" />
+                    ) : (
+                      <CopyIcon size={20} color="#EFF0F4" />
+                    )}
                   </Pressable>
                 ) : null}
               </View>

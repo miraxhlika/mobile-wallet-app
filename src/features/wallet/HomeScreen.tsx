@@ -89,7 +89,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           <BalanceHeader
             currencyCode={currencyCode}
             amount={amount}
-            onInfoPress={() => {}}
+            onInfoPress={() => setBankDetailsOpen(true)}
           />
 
           {balancesLoading && balances.length === 0 ? (

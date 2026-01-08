@@ -4,11 +4,75 @@
  * Inline SVG icons using react-native-svg to avoid metro transformer conflicts with NativeWind.
  */
 import React from "react";
-import Svg, { Path, type SvgProps } from "react-native-svg";
+import Svg, {
+  ClipPath,
+  Defs,
+  G,
+  Path,
+  Rect,
+  type SvgProps,
+} from "react-native-svg";
 
 export interface IconProps extends SvgProps {
   size?: number;
   color?: string;
+}
+
+/** Copy / Duplicate icon */
+export function CopyIcon({ size = 20, color = "#fff", ...props }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+      <Defs>
+        {/* Hide the portion of the back sheet that overlaps the front sheet. */}
+        <ClipPath id="copyBackClip">
+          <Path
+            d="M0 0H24V24H0V0ZM8 8H20V20H8V8Z"
+            clipRule="evenodd"
+          />
+        </ClipPath>
+      </Defs>
+
+      {/* Back sheet (clipped so it doesn't show through the front sheet) */}
+      <G clipPath="url(#copyBackClip)">
+        <Rect
+          x={4}
+          y={4}
+          width={12}
+          height={12}
+          rx={2.2}
+          stroke={color}
+          strokeWidth={1.7}
+          strokeLinejoin="round"
+        />
+      </G>
+      {/* Front sheet */}
+      <Rect
+        x={8}
+        y={8}
+        width={12}
+        height={12}
+        rx={2.2}
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/** Checkmark icon */
+export function CheckIcon({ size = 20, color = "#fff", ...props }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+      <Path
+        d="M20 6L9 17l-5-5"
+        stroke={color}
+        strokeWidth={1.9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
 }
 
 /** Back / Chevron-left icon */
