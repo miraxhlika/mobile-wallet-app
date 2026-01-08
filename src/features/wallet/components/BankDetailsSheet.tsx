@@ -98,7 +98,14 @@ function BankDetailsSheetImpl({
           </View>
 
           <View className="mt-6">
-            <Button label="Share" onPress={handleShare} fullWidth />
+            <Button
+              label="Share"
+              onPress={handleShare}
+              fullWidth
+              variant="secondary"
+              className="bg-transparent border border-text-primary"
+              textClassName="text-text-primary"
+            />
           </View>
         </View>
       </View>

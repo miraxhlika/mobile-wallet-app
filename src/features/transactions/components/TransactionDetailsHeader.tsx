@@ -7,6 +7,7 @@ import React, { memo, useCallback } from "react";
 import { Pressable, View } from "react-native";
 
 import { AppText, HIT_SLOP_44, Pill } from "../../../components";
+import { CheckIcon, CopyIcon } from "../../../components/icons";
 
 export interface TransactionDetailsHeaderProps {
   direction: "income" | "expense";
@@ -23,7 +24,16 @@ function TransactionDetailsHeaderImpl({
 }: TransactionDetailsHeaderProps) {
   const title = direction === "income" ? "Income" : "Expense";
 
+  const [didCopy, setDidCopy] = React.useState(false);
+  const resetTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleCopy = useCallback(() => onCopyAmount?.(), [onCopyAmount]);
+
+  React.useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, []);
 
   return (
     <View className="gap-3">
@@ -36,13 +46,22 @@ function TransactionDetailsHeaderImpl({
         />
         {onCopyAmount ? (
           <Pressable
-            onPress={handleCopy}
+            onPress={() => {
+              handleCopy();
+              setDidCopy(true);
+              if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+              resetTimerRef.current = setTimeout(() => setDidCopy(false), 3000);
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Copy amount"
+            accessibilityLabel={didCopy ? "Amount copied" : "Copy amount"}
             hitSlop={HIT_SLOP_44}
-            className="rounded-pill bg-surface-elevated px-3 py-2"
+            className="p-2"
           >
-            <AppText variant="label">⧉</AppText>
+            {didCopy ? (
+              <CheckIcon size={20} color="#EFF0F4" />
+            ) : (
+              <CopyIcon size={20} color="#EFF0F4" />
+            )}
           </Pressable>
         ) : null}
       </View>
