@@ -1,278 +1,236 @@
 /**
  * Add Funds Screen
- * 
+ *
  * UI-only screen (no API call).
- * Displays a form to add funds and shows success toast on submit.
- * 
- * TODO:
- * - Integrate with payment provider when ready
- * - Add currency selector
- * - Add payment method selection
+ * Form: amount + method selector (Card/Bank Transfer).
+ * On submit: show success toast.
  */
 
-import React, { useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
-import type { AddFundsScreenProps } from '../../navigation/types';
-import { useToast } from '../../components';
+import type { AddFundsScreenProps } from "../../navigation/types";
+import {
+  AppText,
+  BankIcon,
+  Button,
+  Card,
+  CardTabIcon,
+  ChevronLeftIcon,
+  HIT_SLOP_44,
+  useToast,
+} from "../../components";
+import { cn } from "../../components/ui/utils";
+
+type FundingMethod = "card" | "bank_transfer";
+
+function normalizeMoneyInput(raw: string): string {
+  // Allow digits and a single decimal separator; keep it simple for mobile.
+  const cleaned = raw.replace(/,/g, ".").replace(/[^\d.]/g, "");
+  const firstDot = cleaned.indexOf(".");
+  if (firstDot === -1) return cleaned;
+  const before = cleaned.slice(0, firstDot + 1);
+  const after = cleaned.slice(firstDot + 1).replace(/\./g, "");
+  return `${before}${after}`;
+}
+
+function parsePositiveAmount(value: string): number | null {
+  const n = Number.parseFloat(value);
+  if (!Number.isFinite(n)) return null;
+  return n;
+}
 
 export function AddFundsScreen({ navigation }: AddFundsScreenProps) {
   const { showToast } = useToast();
-  const [amount, setAmount] = useState('');
-  const [currency] = useState('USD');
 
-  const handleSubmit = () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      showToast('Please enter a valid amount', 'error');
+  const [amount, setAmount] = useState("");
+  const [method, setMethod] = useState<FundingMethod>("card");
+
+  const currency = "EUR";
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: "",
+      headerLeft: () => (
+        <Pressable
+          onPress={() => {
+            if (navigation.canGoBack()) navigation.goBack();
+            else navigation.navigate("MainTabs", { screen: "Home" });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={HIT_SLOP_44}
+          className="px-4 py-3"
+        >
+          <ChevronLeftIcon size={26} color="#EFF0F4" />
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
+
+  const amountNumber = useMemo(() => parsePositiveAmount(amount), [amount]);
+  const isValid = Boolean(amount.trim()) && amountNumber !== null && amountNumber > 0;
+
+  const handleSubmit = useCallback(() => {
+    if (!isValid) {
+      showToast("Please enter a valid amount", "error");
       return;
     }
 
-    // TODO: Integrate with actual payment flow
-    // For now, just show success toast
-    showToast(`Successfully added ${amount} ${currency} to your wallet!`, 'success');
-    
-    // Navigate back after showing success
-    setTimeout(() => {
-      navigation.goBack();
-    }, 1500);
-  };
+    const methodLabel = method === "card" ? "Card" : "Bank Transfer";
+    showToast(`Success! ${amount.trim()} ${currency} via ${methodLabel}`, "success");
 
-  const quickAmounts = ['50', '100', '250', '500'];
+    // UI-only: clear form for another entry.
+    setAmount("");
+  }, [amount, currency, isValid, method, showToast]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          {/* Amount Input */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Amount to Add</Text>
-            <View style={styles.amountInputContainer}>
-              <Text style={styles.currencySymbol}>$</Text>
-              <TextInput
-                style={styles.amountInput}
-                value={amount}
-                onChangeText={setAmount}
-                placeholder="0.00"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="decimal-pad"
-                autoFocus
-              />
-              <Text style={styles.currencyCode}>{currency}</Text>
-            </View>
-          </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#222222" }} edges={["bottom"]}>
+      <StatusBar style="light" />
+      <View className="flex-1 bg-bg">
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollView contentContainerClassName="px-5 pt-5 pb-8 gap-5">
+            <AppText variant="title">Add funds</AppText>
 
-          {/* Quick Amount Buttons */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Quick Select</Text>
-            <View style={styles.quickAmounts}>
-              {quickAmounts.map((quickAmount) => (
-                <TouchableOpacity
-                  key={quickAmount}
-                  style={[
-                    styles.quickAmountButton,
-                    amount === quickAmount && styles.quickAmountButtonActive,
-                  ]}
-                  onPress={() => setAmount(quickAmount)}
+            {/* Amount */}
+            <Card>
+              <AppText variant="label" className="mb-2">
+                Amount
+              </AppText>
+              <View className="flex-row items-center gap-3">
+                <TextInput
+                  value={amount}
+                  onChangeText={(v) => setAmount(normalizeMoneyInput(v))}
+                  placeholder="0.00"
+                  placeholderTextColor="#9E9FA6"
+                  keyboardType="decimal-pad"
+                  className={cn(
+                    "flex-1 bg-surface border border-border rounded-md px-4 py-3",
+                    "text-text-primary text-[20px] font-semibold"
+                  )}
+                />
+                <View className="px-3 py-3 rounded-md bg-surface border border-border">
+                  <AppText variant="label" className="text-text-secondary">
+                    {currency}
+                  </AppText>
+                </View>
+              </View>
+              <AppText variant="caption" className="mt-2 text-text-secondary">
+                UI only — no payment will be processed.
+              </AppText>
+            </Card>
+
+            {/* Method selector */}
+            <Card>
+              <AppText variant="label" className="mb-3">
+                Method
+              </AppText>
+
+              <View className="gap-3">
+                <Pressable
+                  onPress={() => setMethod("card")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Select Card"
+                  className={cn(
+                    "flex-row items-center gap-3 px-4 py-4 rounded-md border",
+                    method === "card"
+                      ? "bg-surface-elevated border-primary"
+                      : "bg-surface border-border"
+                  )}
                 >
-                  <Text
-                    style={[
-                      styles.quickAmountText,
-                      amount === quickAmount && styles.quickAmountTextActive,
-                    ]}
+                  <View
+                    className={cn(
+                      "w-10 h-10 rounded-pill items-center justify-center",
+                      method === "card" ? "bg-primary/20" : "bg-surface-elevated"
+                    )}
                   >
-                    ${quickAmount}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+                    <CardTabIcon size={20} color={method === "card" ? "#FF2C55" : "#9E9FA6"} />
+                  </View>
+                  <View className="flex-1">
+                    <AppText variant="label">Card</AppText>
+                    <AppText variant="caption" className="text-text-secondary">
+                      Instant top up (demo)
+                    </AppText>
+                  </View>
+                  <View
+                    className={cn(
+                      "w-5 h-5 rounded-pill border items-center justify-center",
+                      method === "card" ? "border-primary" : "border-border"
+                    )}
+                  >
+                    {method === "card" ? <View className="w-3 h-3 rounded-pill bg-primary" /> : null}
+                  </View>
+                </Pressable>
 
-          {/* Payment Method Placeholder */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Payment Method</Text>
-            <View style={styles.paymentMethodCard}>
-              <View style={styles.cardIcon}>
-                <Text>💳</Text>
+                <Pressable
+                  onPress={() => setMethod("bank_transfer")}
+                  accessibilityRole="button"
+                  accessibilityLabel="Select Bank Transfer"
+                  className={cn(
+                    "flex-row items-center gap-3 px-4 py-4 rounded-md border",
+                    method === "bank_transfer"
+                      ? "bg-surface-elevated border-primary"
+                      : "bg-surface border-border"
+                  )}
+                >
+                  <View
+                    className={cn(
+                      "w-10 h-10 rounded-pill items-center justify-center",
+                      method === "bank_transfer" ? "bg-primary/20" : "bg-surface-elevated"
+                    )}
+                  >
+                    <BankIcon
+                      size={20}
+                      color={method === "bank_transfer" ? "#FF2C55" : "#9E9FA6"}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <AppText variant="label">Bank Transfer</AppText>
+                    <AppText variant="caption" className="text-text-secondary">
+                      1–2 business days (demo)
+                    </AppText>
+                  </View>
+                  <View
+                    className={cn(
+                      "w-5 h-5 rounded-pill border items-center justify-center",
+                      method === "bank_transfer" ? "border-primary" : "border-border"
+                    )}
+                  >
+                    {method === "bank_transfer" ? (
+                      <View className="w-3 h-3 rounded-pill bg-primary" />
+                    ) : null}
+                  </View>
+                </Pressable>
               </View>
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardName}>Visa ending in 4242</Text>
-                <Text style={styles.cardExpiry}>Expires 12/25</Text>
-              </View>
-              <Text style={styles.changeText}>Change</Text>
-            </View>
-            <Text style={styles.disclaimer}>
-              This is a demo. No actual payment will be processed.
-            </Text>
-          </View>
-        </ScrollView>
+            </Card>
 
-        {/* Submit Button */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              (!amount || parseFloat(amount) <= 0) && styles.submitButtonDisabled,
-            ]}
-            onPress={handleSubmit}
-            disabled={!amount || parseFloat(amount) <= 0}
-          >
-            <Text style={styles.submitButtonText}>
-              Add {amount ? `$${amount}` : 'Funds'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+            {/* CTA */}
+            <View className="pt-1">
+              <Button
+                label={amount.trim() ? `Add ${amount.trim()} ${currency}` : "Add funds"}
+                fullWidth
+                disabled={!isValid}
+                onPress={handleSubmit}
+              />
+              <AppText variant="caption" className="mt-3 text-text-secondary text-center">
+                No backend call required — this is UI-only.
+              </AppText>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  amountInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  currencySymbol: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginRight: 8,
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  currencyCode: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  quickAmounts: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  quickAmountButton: {
-    flex: 1,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-  },
-  quickAmountButtonActive: {
-    backgroundColor: '#EBF5FF',
-    borderColor: '#3B82F6',
-  },
-  quickAmountText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  quickAmountTextActive: {
-    color: '#3B82F6',
-  },
-  paymentMethodCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  cardIcon: {
-    width: 40,
-    height: 40,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  cardInfo: {
-    flex: 1,
-  },
-  cardName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
-  },
-  cardExpiry: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  changeText: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-  disclaimer: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 8,
-    fontStyle: 'italic',
-  },
-  footer: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  submitButton: {
-    backgroundColor: '#3B82F6',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-});
-
