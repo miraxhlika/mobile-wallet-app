@@ -88,7 +88,13 @@ export function RootNavigator() {
       <Stack.Screen
         name="AddFunds"
         component={AddFundsScreen}
-        options={{ title: "Add Funds" }}
+        options={{
+          title: "",
+          headerStyle: { backgroundColor: "#222222" },
+          headerTintColor: "#EFF0F4",
+          headerTitleStyle: { color: "#EFF0F4" },
+          headerShadowVisible: false,
+        }}
       />
     </Stack.Navigator>
   );
