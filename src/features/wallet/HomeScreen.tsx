@@ -105,7 +105,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             <ErrorState
               title="Failed to load balances"
               description={balancesError.message}
-              action={{ label: "Try again", onPress: refetchBalances }}
+              action={{ label: "Try again", onPress: () => refetchBalances() }}
             />
           ) : null}
 
@@ -118,7 +118,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           <PromoCard
             title="Get your card and use it anywhere"
             buttonLabel="Order card"
-            onPress={() => {}}
+            onPress={() => navigation.navigate("Cards")}
           />
 
           <TransactionsPreviewCard

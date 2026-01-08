@@ -18,7 +18,7 @@ export function CardsScreen() {
 
         <View className="mt-4 gap-4">
           <Card variant="elevated" className="gap-3">
-            <AppText variant="label" className="text-text-secondary">
+            <AppText variant="body" className="text-text-secondary">
               Your card
             </AppText>
             <EmptyState
@@ -37,7 +37,7 @@ export function CardsScreen() {
           </Card>
 
           <Card variant="elevated" className="gap-2">
-            <AppText variant="label" className="text-text-secondary">
+            <AppText variant="body" className="text-text-secondary">
               Coming next
             </AppText>
             <AppText variant="body" className="text-text-secondary">

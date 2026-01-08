@@ -22,21 +22,37 @@ function PromoCardImpl({
   onPress,
   className,
 }: PromoCardProps) {
+  const promoImage = require("../../../../assets/illustrations/card-promo.png");
+
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityHint={buttonLabel}
-      className={cn(className)}
+      className={cn("w-full", className)}
+      style={{ width: "100%" }}
     >
       {/* Android note: `overflow-hidden` on Pressable doesn't reliably clip children.
-          Wrap in a View to ensure all corners (including top) are clipped. */}
-      <View className="overflow-hidden rounded-md">
+          Clip inside a non-Pressable surface instead. */}
+      <View
+        className="w-full overflow-hidden rounded-md"
+        style={{
+          width: "100%",
+          height: 170,
+          borderRadius: 14,
+          overflow: "hidden",
+        }}
+      >
         <Image
-          source={require("../../../../assets/illustrations/card-promo.png")}
+          source={promoImage}
           resizeMode="cover"
-          style={{ width: "100%", height: 140 }}
+          style={{
+            width: "100%",
+            height: "100%",
+            resizeMode: "none",
+            transform: [{ scale: 1.13 }],
+          }}
         />
       </View>
     </Pressable>

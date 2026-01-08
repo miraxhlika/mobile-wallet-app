@@ -8,7 +8,10 @@
  */
 import React, { memo, useCallback, useMemo, useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 import type { TransactionStatus } from "../../../types";
@@ -88,6 +91,7 @@ function TransactionsFilterSheetImpl({
   onApply,
   onClear,
 }: TransactionsFilterSheetProps) {
+  const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<TransactionsFilterState>(value);
   const [activePicker, setActivePicker] = useState<"from" | "to" | null>(null);
   const [iosPickerOpen, setIosPickerOpen] = useState(false);
@@ -165,7 +169,9 @@ function TransactionsFilterSheetImpl({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="overFullScreen"
+      presentationStyle={
+        Platform.OS === "ios" ? "fullScreen" : "overFullScreen"
+      }
       statusBarTranslucent={Platform.OS === "android"}
       navigationBarTranslucent={Platform.OS === "android"}
       onRequestClose={onClose}
@@ -175,7 +181,17 @@ function TransactionsFilterSheetImpl({
         edges={["top", "bottom"]}
       >
         <View style={{ flex: 1 }} className="bg-bg">
-          <View className="px-5 pt-3 pb-2 flex-row items-center justify-between z-10">
+          <View
+            style={{
+              paddingHorizontal: 20,
+              // Defensive: `SafeAreaView` inside RN `Modal` can sometimes be
+              // late/incorrect after navigation transitions on iOS, so we also
+              // apply explicit insets to keep the header below the notch.
+              paddingTop: 12 + (insets.top || 0),
+              paddingBottom: 8,
+            }}
+            className="flex-row items-center justify-between z-10"
+          >
             <AppText variant="title">Filter</AppText>
             <Pressable
               onPress={onClose}
@@ -193,7 +209,8 @@ function TransactionsFilterSheetImpl({
             contentContainerStyle={{
               paddingHorizontal: 20, // px-5
               paddingTop: 16, // pt-4
-              paddingBottom: 40, // pb-10
+              // Ensure bottom actions are not hidden by the home indicator.
+              paddingBottom: 40 + (insets.bottom || 0), // pb-10 + safe area
             }}
             keyboardShouldPersistTaps="handled"
           >
@@ -269,7 +286,10 @@ function TransactionsFilterSheetImpl({
                     accessibilityRole="button"
                     accessibilityLabel="Close date picker"
                   />
-                  <View className="bg-surface rounded-t-3xl px-5 pt-4 pb-8">
+                  <View
+                    style={{ paddingBottom: 16 + (insets.bottom || 0) }}
+                    className="bg-surface rounded-t-3xl px-5 pt-4"
+                  >
                     <View className="flex-row items-center justify-between">
                       <AppText variant="label" className="text-text-secondary">
                         {activePicker === "from" ? "From" : "To"}
@@ -324,7 +344,7 @@ function TransactionsFilterSheetImpl({
             <AppText variant="label" className="mb-3 text-text-secondary">
               Status
             </AppText>
-            <View className="rounded-2xl bg-surface-elevated overflow-hidden">
+            <View className="gap-3">
               {STATUS_ITEMS.map((s) => {
                 const checked = draft.statuses.includes(s.value);
                 return (
@@ -340,15 +360,15 @@ function TransactionsFilterSheetImpl({
                     accessibilityState={{ checked }}
                     accessibilityLabel={s.label}
                     className={[
-                      "px-5 py-4 flex-row items-center justify-between",
-                      checked ? "bg-white/10" : "",
+                      "px-5 py-4 flex-row items-center justify-between rounded-2xl",
+                      checked ? "bg-surface-elevated" : "bg-transparent",
                     ].join(" ")}
                   >
                     <AppText variant="body">{s.label}</AppText>
                     <View
                       className={[
-                        "h-6 w-6 rounded-md border border-border items-center justify-center",
-                        checked ? "bg-[#ED5951] border-[#ED5951]" : "",
+                        "h-5 w-5 rounded-[6px] border border-border items-center justify-center",
+                        checked ? "bg-primary border-primary" : "",
                       ].join(" ")}
                     >
                       {checked ? (
@@ -368,7 +388,7 @@ function TransactionsFilterSheetImpl({
             <AppText variant="label" className="mb-3 text-text-secondary">
               Transaction category
             </AppText>
-            <View className="rounded-2xl bg-surface-elevated overflow-hidden">
+            <View className="gap-3">
               {CATEGORY_ITEMS.map((c) => {
                 const checked = draft.categories.includes(c.value);
                 return (
@@ -384,15 +404,15 @@ function TransactionsFilterSheetImpl({
                     accessibilityState={{ checked }}
                     accessibilityLabel={c.label}
                     className={[
-                      "px-5 py-4 flex-row items-center justify-between",
-                      checked ? "bg-white/10" : "",
+                      "px-5 py-4 flex-row items-center justify-between rounded-2xl",
+                      checked ? "bg-surface-elevated" : "bg-transparent",
                     ].join(" ")}
                   >
                     <AppText variant="body">{c.label}</AppText>
                     <View
                       className={[
-                        "h-6 w-6 rounded-md border border-border items-center justify-center",
-                        checked ? "bg-[#ED5951] border-[#ED5951]" : "",
+                        "h-5 w-5 rounded-[6px] border border-border items-center justify-center",
+                        checked ? "bg-primary border-primary" : "",
                       ].join(" ")}
                     >
                       {checked ? (
@@ -412,7 +432,7 @@ function TransactionsFilterSheetImpl({
             <AppText variant="label" className="mb-3 text-text-secondary">
               Currency
             </AppText>
-            <View className="rounded-2xl bg-surface-elevated overflow-hidden">
+            <View className="gap-3">
               {CURRENCY_ITEMS.map((c) => {
                 const checked = draft.currencies.includes(c.value);
                 return (
@@ -428,15 +448,15 @@ function TransactionsFilterSheetImpl({
                     accessibilityState={{ checked }}
                     accessibilityLabel={c.label}
                     className={[
-                      "px-5 py-4 flex-row items-center justify-between",
-                      checked ? "bg-white/10" : "",
+                      "px-5 py-4 flex-row items-center justify-between rounded-2xl",
+                      checked ? "bg-surface-elevated" : "bg-transparent",
                     ].join(" ")}
                   >
                     <AppText variant="body">{c.label}</AppText>
                     <View
                       className={[
-                        "h-6 w-6 rounded-md border border-border items-center justify-center",
-                        checked ? "bg-[#ED5951] border-[#ED5951]" : "",
+                        "h-5 w-5 rounded-[6px] border border-border items-center justify-center",
+                        checked ? "bg-primary border-primary" : "",
                       ].join(" ")}
                     >
                       {checked ? (
@@ -456,6 +476,8 @@ function TransactionsFilterSheetImpl({
                 onPress={handleApply}
                 disabled={!canApply}
                 fullWidth
+                className="bg-white"
+                textClassName="text-bg"
               />
               <Button
                 label="Clear all"

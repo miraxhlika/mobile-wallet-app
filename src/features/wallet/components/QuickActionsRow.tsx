@@ -25,19 +25,19 @@ function QuickActionsRowImpl({
   return (
     <View className={cn("flex-row justify-center gap-6", className)}>
       <IconButton
-        icon={<AddIcon size={20} color="#fff" />}
+        icon={<AddIcon size={28} color="#fff" />}
         label="Add"
         onPress={onAdd}
         accessibilityLabel="Add funds"
       />
       <IconButton
-        icon={<SendIcon size={20} color="#fff" />}
+        icon={<SendIcon size={28} color="#fff" />}
         label="Send"
         onPress={onSend}
         accessibilityLabel="Send money"
       />
       <IconButton
-        icon={<BankIcon size={20} color="#fff" />}
+        icon={<BankIcon size={28} color="#fff" />}
         label="Details"
         onPress={onDetails}
         accessibilityLabel="Bank details"

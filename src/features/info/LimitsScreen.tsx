@@ -16,7 +16,7 @@ function Section({
 }) {
   return (
     <View className={cn("gap-3", className)}>
-      <AppText variant="caption" className="uppercase tracking-widest text-text-secondary">
+      <AppText variant="label" className="uppercase tracking-widest text-text-secondary">
         {title}
       </AppText>
       <Card className="gap-3">
@@ -35,10 +35,10 @@ const Row = memo(function Row({
 }) {
   return (
     <View className="flex-row items-start justify-between gap-4">
-      <AppText variant="caption" className="flex-1 text-text-secondary">
+      <AppText variant="body" className="flex-1 text-text-secondary">
         {label}
       </AppText>
-      <AppText variant="body" className="text-right">
+      <AppText variant="body" className="text-right font-semibold">
         {value}
       </AppText>
     </View>
