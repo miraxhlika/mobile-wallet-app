@@ -1,8 +1,8 @@
 /**
  * `IconButton`
  *
- * Circular icon button used for quick actions.
- * Ensures adequate hit target and accessibility labels.
+ * Quick action button (icon + label).
+ * Designed to match the Figma-ish rounded-square buttons on the Wallet home screen.
  */
 import React, { memo, useCallback, useMemo } from "react";
 import type { PressableProps, StyleProp, ViewStyle } from "react-native";
@@ -31,8 +31,9 @@ const VARIANT_CLASS: Record<IconButtonVariant, string> = {
 };
 
 const SIZE_CLASS: Record<IconButtonSize, { outer: string; inner: string }> = {
-  md: { outer: "w-16", inner: "w-14 h-14" },
-  lg: { outer: "w-20", inner: "w-16 h-16" },
+  // Outer width keeps label centered; inner is the visible button.
+  md: { outer: "w-20", inner: "w-16 h-16" }, // 80 / 64
+  lg: { outer: "w-22", inner: "w-18 h-18" }, // 88 / 72
 };
 
 function IconButtonImpl({
@@ -75,7 +76,7 @@ function IconButtonImpl({
     >
       <View
         className={cn(
-          "items-center justify-center rounded-pill",
+          "items-center justify-center rounded-[20px]",
           SIZE_CLASS[size].inner,
           VARIANT_CLASS[variant],
           disabled && "opacity-50",

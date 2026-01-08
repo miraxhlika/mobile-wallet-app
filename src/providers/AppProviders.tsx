@@ -10,8 +10,11 @@
 
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from "react-native-safe-area-context";
+import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { QueryProvider } from "./QueryProvider";
@@ -23,6 +26,20 @@ import { login } from "../services/api";
 interface AppProvidersProps {
   children: React.ReactNode;
 }
+
+const navTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    // Important: this is what shows through rounded tab bar corners.
+    background: "#222222",
+    card: "#222222",
+    text: "#EFF0F4",
+    border: "rgba(255,255,255,0.10)",
+    primary: "#FF2C55",
+    notification: "#FF2C55",
+  },
+};
 
 /**
  * Hydration wrapper to load persisted state before rendering the app
@@ -69,9 +86,9 @@ function HydrationGate({ children }: { children: React.ReactNode }) {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <QueryProvider>
-          <NavigationContainer>
+          <NavigationContainer theme={navTheme}>
             <ToastProvider>
               <HydrationGate>{children}</HydrationGate>
             </ToastProvider>
@@ -85,6 +102,7 @@ export function AppProviders({ children }: AppProvidersProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: "#222222",
   },
   loadingContainer: {
     flex: 1,

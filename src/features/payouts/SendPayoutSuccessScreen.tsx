@@ -52,13 +52,13 @@ export function SendPayoutSuccessScreen({ route, navigation }: SendPayoutSuccess
           </View>
 
           <Card>
-            <AppText variant="label" className="mb-3">
+            <AppText variant="body" className="mb-3 font-semibold">
               Transaction summary
             </AppText>
 
             <View className="gap-3">
               <View className="flex-row justify-between gap-4">
-                <AppText variant="caption" className="text-text-secondary">
+                <AppText variant="body" className="text-text-secondary">
                   Transaction ID
                 </AppText>
                 <AppText variant="body" className="text-right">
@@ -67,7 +67,7 @@ export function SendPayoutSuccessScreen({ route, navigation }: SendPayoutSuccess
               </View>
 
               <View className="flex-row justify-between gap-4">
-                <AppText variant="caption" className="text-text-secondary">
+                <AppText variant="body" className="text-text-secondary">
                   Amount
                 </AppText>
                 <AppText variant="body" className="text-right">
@@ -76,7 +76,7 @@ export function SendPayoutSuccessScreen({ route, navigation }: SendPayoutSuccess
               </View>
 
               <View className="flex-row justify-between gap-4">
-                <AppText variant="caption" className="text-text-secondary">
+                <AppText variant="body" className="text-text-secondary">
                   Recipient
                 </AppText>
                 <AppText variant="body" className="text-right">
@@ -85,7 +85,7 @@ export function SendPayoutSuccessScreen({ route, navigation }: SendPayoutSuccess
               </View>
 
               <View className="flex-row justify-between gap-4">
-                <AppText variant="caption" className="text-text-secondary">
+                <AppText variant="body" className="text-text-secondary">
                   Destination
                 </AppText>
                 <AppText variant="body" className="text-right" numberOfLines={1}>
@@ -95,7 +95,7 @@ export function SendPayoutSuccessScreen({ route, navigation }: SendPayoutSuccess
 
               {payout.description ? (
                 <View className="flex-row justify-between gap-4">
-                  <AppText variant="caption" className="text-text-secondary">
+                  <AppText variant="body" className="text-text-secondary">
                     Note
                   </AppText>
                   <AppText variant="body" className="text-right">
@@ -107,7 +107,7 @@ export function SendPayoutSuccessScreen({ route, navigation }: SendPayoutSuccess
           </Card>
 
           <Card variant="subtle">
-            <AppText variant="caption" className="text-text-secondary text-center">
+            <AppText variant="body" className="text-text-secondary text-center">
               The recipient will typically receive the funds within 1–3 business days.
             </AppText>
           </Card>

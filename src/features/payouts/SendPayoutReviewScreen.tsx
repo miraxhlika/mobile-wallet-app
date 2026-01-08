@@ -61,7 +61,7 @@ export function SendPayoutReviewScreen({ route, navigation }: SendPayoutReviewSc
           <AppText variant="title">Review payout</AppText>
 
           <View className="items-center py-2">
-            <AppText variant="caption" className="text-text-secondary">
+            <AppText variant="body" className="text-text-secondary">
               Sending
             </AppText>
             <AppText variant="display" className="mt-2">
@@ -70,13 +70,13 @@ export function SendPayoutReviewScreen({ route, navigation }: SendPayoutReviewSc
           </View>
 
           <Card>
-            <AppText variant="label" className="mb-3">
+            <AppText variant="body" className="mb-3 font-semibold">
               Payout details
             </AppText>
 
             <View className="gap-3">
               <View className="flex-row justify-between gap-4">
-                <AppText variant="caption" className="text-text-secondary">
+                <AppText variant="body" className="text-text-secondary">
                   Recipient
                 </AppText>
                 <AppText variant="body" className="text-right">
@@ -85,7 +85,7 @@ export function SendPayoutReviewScreen({ route, navigation }: SendPayoutReviewSc
               </View>
 
               <View className="flex-row justify-between gap-4">
-                <AppText variant="caption" className="text-text-secondary">
+                <AppText variant="body" className="text-text-secondary">
                   Destination
                 </AppText>
                 <AppText variant="body" className="text-right" numberOfLines={1}>
@@ -95,7 +95,7 @@ export function SendPayoutReviewScreen({ route, navigation }: SendPayoutReviewSc
 
               {payoutData.description ? (
                 <View className="flex-row justify-between gap-4">
-                  <AppText variant="caption" className="text-text-secondary">
+                  <AppText variant="body" className="text-text-secondary">
                     Note
                   </AppText>
                   <AppText variant="body" className="text-right">
@@ -108,7 +108,7 @@ export function SendPayoutReviewScreen({ route, navigation }: SendPayoutReviewSc
 
           <Card variant="subtle">
             <View className="flex-row justify-between">
-              <AppText variant="caption" className="text-text-secondary">
+              <AppText variant="body" className="text-text-secondary">
                 Amount
               </AppText>
               <AppText variant="body">
@@ -116,20 +116,22 @@ export function SendPayoutReviewScreen({ route, navigation }: SendPayoutReviewSc
               </AppText>
             </View>
             <View className="mt-2 flex-row justify-between">
-              <AppText variant="caption" className="text-text-secondary">
+              <AppText variant="body" className="text-text-secondary">
                 Fee
               </AppText>
               <AppText variant="body">0.00 {payoutData.currency}</AppText>
             </View>
             <View className="mt-3 pt-3 border-t border-border flex-row justify-between">
-              <AppText variant="label">Total</AppText>
-              <AppText variant="label">
+              <AppText variant="body" className="font-semibold">
+                Total
+              </AppText>
+              <AppText variant="body" className="font-semibold">
                 {payoutData.amount} {payoutData.currency}
               </AppText>
             </View>
           </Card>
 
-          <AppText variant="caption" className="text-center text-text-secondary">
+          <AppText variant="body" className="text-center text-text-secondary">
             By confirming, you authorize this payout from your wallet balance. This action cannot be undone.
           </AppText>
         </ScrollView>

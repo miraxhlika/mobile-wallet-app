@@ -25,10 +25,7 @@ export function CopyIcon({ size = 20, color = "#fff", ...props }: IconProps) {
       <Defs>
         {/* Hide the portion of the back sheet that overlaps the front sheet. */}
         <ClipPath id="copyBackClip">
-          <Path
-            d="M0 0H24V24H0V0ZM8 8H20V20H8V8Z"
-            clipRule="evenodd"
-          />
+          <Path d="M0 0H24V24H0V0ZM8 8H20V20H8V8Z" clipRule="evenodd" />
         </ClipPath>
       </Defs>
 
@@ -140,12 +137,20 @@ export function FilterIcon({ size = 24, color = "#fff", ...props }: IconProps) {
 /** Plus / Add icon */
 export function AddIcon({ size = 20, color = "#fff", ...props }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 17 17" fill="none" {...props}>
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
       <Path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M8.25 0C8.66421 0 9 0.335786 9 0.75V7.5H15.75C16.1642 7.5 16.5 7.83579 16.5 8.25C16.5 8.66421 16.1642 9 15.75 9H9V15.75C9 16.1642 8.66421 16.5 8.25 16.5C7.83579 16.5 7.5 16.1642 7.5 15.75V9H0.75C0.335786 9 0 8.66421 0 8.25C0 7.83579 0.335786 7.5 0.75 7.5H7.5V0.75C7.5 0.335786 7.83579 0 8.25 0Z"
-        fill={color}
+        d="M12 5V19"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M5 12H19"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -154,18 +159,20 @@ export function AddIcon({ size = 20, color = "#fff", ...props }: IconProps) {
 /** Send / Arrow icon */
 export function SendIcon({ size = 20, color = "#fff", ...props }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 18 18" fill="none" {...props}>
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
       <Path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M16.7803 1.21967C17.0732 1.51256 17.0732 1.98744 16.7803 2.28033L2.28033 16.7803C1.98744 17.0732 1.51256 17.0732 1.21967 16.7803C0.926777 16.4874 0.926777 16.0126 1.21967 15.7197L15.7197 1.21967C16.0126 0.926777 16.4874 0.926777 16.7803 1.21967Z"
-        fill={color}
+        d="M21 7L4.5 12.5L10.5 14.5L14.5 20.5L21 7Z"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <Path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M6.75 2C6.75 1.58579 7.08579 1.25 7.5 1.25H16C16.4142 1.25 16.75 1.58579 16.75 2V10.5C16.75 10.9142 16.4142 11.25 16 11.25C15.5858 11.25 15.25 10.9142 15.25 10.5V2.75H7.5C7.08579 2.75 6.75 2.41421 6.75 2Z"
-        fill={color}
+        d="M21 7L10.5 14.5"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -174,30 +181,50 @@ export function SendIcon({ size = 20, color = "#fff", ...props }: IconProps) {
 /** Bank / Building icon */
 export function BankIcon({ size = 20, color = "#fff", ...props }: IconProps) {
   return (
-    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none" {...props}>
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
       <Path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M9.67082 1.17082C9.87534 1.0597 10.1247 1.0597 10.3292 1.17082L18.3292 5.50415C18.5681 5.63376 18.7169 5.88191 18.7169 6.15218C18.7169 6.42245 18.5681 6.6706 18.3292 6.80021L17.5 7.25V8.25C17.5 8.66421 17.1642 9 16.75 9H3.25C2.83579 9 2.5 8.66421 2.5 8.25V7.25L1.67082 6.80021C1.43191 6.6706 1.28308 6.42245 1.28308 6.15218C1.28308 5.88191 1.43191 5.63376 1.67082 5.50415L9.67082 1.17082ZM4 7.5H16V6.57359L10 3.31577L4 6.57359V7.5Z"
-        fill={color}
+        d="M4 9L12 5L20 9"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+        strokeLinecap="round"
       />
       <Path
-        d="M4.5 10.5C4.5 10.0858 4.83579 9.75 5.25 9.75C5.66421 9.75 6 10.0858 6 10.5V14.5H4.5V10.5Z"
-        fill={color}
+        d="M5 10H19"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+        strokeLinecap="round"
       />
       <Path
-        d="M9.25 10.5C9.25 10.0858 9.58579 9.75 10 9.75C10.4142 9.75 10.75 10.0858 10.75 10.5V14.5H9.25V10.5Z"
-        fill={color}
+        d="M6.5 11.5V17.5"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
       />
       <Path
-        d="M14 10.5C14 10.0858 14.3358 9.75 14.75 9.75C15.1642 9.75 15.5 10.0858 15.5 10.5V14.5H14V10.5Z"
-        fill={color}
+        d="M10 11.5V17.5"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
       />
       <Path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M2 15.25C2 14.8358 2.33579 14.5 2.75 14.5H17.25C17.6642 14.5 18 14.8358 18 15.25V17.75C18 18.1642 17.6642 18.5 17.25 18.5H2.75C2.33579 18.5 2 18.1642 2 17.75V15.25ZM3.5 16V17H16.5V16H3.5Z"
-        fill={color}
+        d="M13.5 11.5V17.5"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M17 11.5V17.5"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M4.5 19H19.5"
+        stroke={color}
+        strokeWidth={1.7}
+        strokeLinecap="round"
       />
     </Svg>
   );
