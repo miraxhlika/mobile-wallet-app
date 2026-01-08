@@ -8,7 +8,13 @@
  * - Inline validation (positive amount + balance check if available)
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -25,6 +31,7 @@ import type { PayoutRequest } from "../../types";
 import { AppText, Button, Card, HIT_SLOP_44 } from "../../components";
 import { cn } from "../../components/ui/utils";
 import { useBalances } from "../wallet/hooks";
+import { useSettingsStore } from "../wallet";
 import { ChevronLeftIcon } from "../../components/icons";
 
 type Beneficiary = {
@@ -81,6 +88,8 @@ export function SendPayoutFormScreen({
   navigation,
 }: SendPayoutFormScreenProps) {
   const { balances } = useBalances();
+  const selectedCurrency = useSettingsStore((s) => s.selectedCurrency);
+  const setSelectedCurrency = useSettingsStore((s) => s.setSelectedCurrency);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -109,13 +118,21 @@ export function SendPayoutFormScreen({
   }, [balances]);
 
   const defaultCurrency = useMemo(() => {
+    if (currencyOptions.includes(selectedCurrency)) return selectedCurrency;
     return currencyOptions.includes("EUR")
       ? "EUR"
       : currencyOptions[0] ?? "EUR";
-  }, [currencyOptions]);
+  }, [currencyOptions, selectedCurrency]);
 
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState<string>(defaultCurrency);
+
+  // If balances load and available currencies change, keep the selection valid.
+  useEffect(() => {
+    if (!currencyOptions.includes(currency)) {
+      setCurrency(defaultCurrency);
+    }
+  }, [currency, currencyOptions, defaultCurrency]);
 
   const [destinationKind, setDestinationKind] =
     useState<DestinationKind>("beneficiary");
@@ -280,7 +297,10 @@ export function SendPayoutFormScreen({
                     return (
                       <Pressable
                         key={c}
-                        onPress={() => setCurrency(c)}
+                        onPress={() => {
+                          setCurrency(c);
+                          void setSelectedCurrency(c);
+                        }}
                         className={cn("px-3 py-3", active && "bg-primary/20")}
                         accessibilityRole="button"
                         accessibilityLabel={`Select currency ${c}`}
