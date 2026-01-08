@@ -2,15 +2,16 @@
  * React Query hooks for transaction data.
  *
  * PAGINATION BEHAVIOR:
- * - Uses page/per_page pagination (mock server)
- * - Response is derived from mock server's `has_more` + `items`
+ * - Uses true cursor-based pagination when supported by the API (/transactions?cursor=...)
+ * - Falls back to page/per_page pagination for the local mock server
  * - Caps total transactions at 50 (MAX_TRANSACTIONS)
- * - Fetches 10 items per page by default (PAGE_SIZE)
+ * - Fetches PAGE_SIZE items per page by default (but never exceeds remaining-to-50)
  */
 
 import {
   useInfiniteQuery,
   useQuery,
+  type InfiniteData,
 } from "@tanstack/react-query";
 import { fetchTransactions, fetchTransactionById } from "../../services/api";
 import type {
@@ -21,20 +22,18 @@ import type {
 } from "../../types";
 
 const PAGE_SIZE = 20;
+const MAX_TRANSACTIONS = 50;
 
 export const TRANSACTIONS_QUERY_KEY = ["transactions"] as const;
 export const TRANSACTION_DETAIL_QUERY_KEY = ["transaction"] as const;
 
 type InfiniteTransactionsPage = PaginatedTransactionsResponse & {
-  /**
-   * Mock-server-aligned aliases (snake_case) for pagination fields.
-   * Kept in the page object so pagination logic can use mock semantics,
-   * without breaking existing UI that reads `page.data`.
-   */
   items: Transaction[];
-  has_more: boolean;
-  page: number;
-  per_page: number;
+};
+
+type TransactionsPageParam = {
+  cursor?: string | null;
+  loaded: number;
 };
 
 /**
@@ -44,40 +43,49 @@ type InfiniteTransactionsPage = PaginatedTransactionsResponse & {
 export function useInfiniteTransactions(filters?: TransactionFilters) {
   const queryKey = [...TRANSACTIONS_QUERY_KEY, filters] as const;
 
-  const query = useInfiniteQuery<InfiniteTransactionsPage, ApiError>({
+  const query = useInfiniteQuery<
+    InfiniteTransactionsPage,
+    ApiError,
+    InfiniteData<InfiniteTransactionsPage, TransactionsPageParam>,
+    typeof queryKey,
+    TransactionsPageParam
+  >({
     queryKey,
     queryFn: async ({ pageParam }) => {
-      const page =
-        typeof pageParam === "number" && Number.isFinite(pageParam)
-          ? pageParam
-          : 1;
+      const loadedSoFar = pageParam?.loaded ?? 0;
+      const remaining = Math.max(0, MAX_TRANSACTIONS - loadedSoFar);
+      const requested = Math.min(PAGE_SIZE, remaining);
 
-      const perPage = PAGE_SIZE;
+      if (requested <= 0) {
+        return { data: [], items: [], hasMore: false, nextCursor: null };
+      }
 
+      const cursor =
+        pageParam?.cursor &&
+        typeof pageParam.cursor === "string" &&
+        pageParam.cursor.trim()
+          ? pageParam.cursor
+          : undefined;
+
+      // `fetchTransactions` auto-selects cursor vs page/per_page based on environment/response.
       const resp = await fetchTransactions({
-        // `fetchTransactions` already uses page/per_page under the hood; we pass page number as cursor.
-        cursor: String(page),
-        limit: perPage,
+        cursor,
+        limit: requested,
         filters,
       });
 
-      // Keep existing shape for current UI (`data`, `hasMore`, `nextCursor`)
-      // and add mock-aligned aliases for pagination logic (`items`, `has_more`).
       return {
         ...resp,
         items: resp.data,
-        has_more: resp.hasMore,
-        page,
-        per_page: perPage,
       };
     },
-    initialPageParam: 1,
+    // For cursor-based APIs, the first page has no cursor. For mock paging, fetchTransactions will map this to page=1.
+    initialPageParam: { cursor: null, loaded: 0 },
     getNextPageParam: (lastPage, allPages) => {
-      // Next page only when:
-      // - mock server says there's more (`has_more`)
-      if (!lastPage.has_more) return undefined;
-
-      return lastPage.page + 1;
+      const loaded = allPages.reduce((sum, p) => sum + p.items.length, 0);
+      if (loaded >= MAX_TRANSACTIONS) return undefined;
+      if (!lastPage.hasMore) return undefined;
+      return { cursor: lastPage.nextCursor, loaded };
     },
     staleTime: 30_000,
     gcTime: 5 * 60_000,
@@ -85,7 +93,14 @@ export function useInfiniteTransactions(filters?: TransactionFilters) {
   });
 
   // Convenience for FlatList (UI can migrate later without changing pagination semantics)
-  const transactions = query.data?.pages.flatMap((p) => p.items) ?? [];
+  const transactionsRaw = query.data?.pages.flatMap((p) => p.items) ?? [];
+  // Defensive de-dupe by id to prevent React key collisions if the backend overlaps pages.
+  const seen = new Set<string>();
+  const transactions = transactionsRaw.filter((t) => {
+    if (seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
 
   return {
     ...query,

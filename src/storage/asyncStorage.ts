@@ -40,9 +40,11 @@ export async function loadSelectedCurrency(): Promise<string | null> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface StoredFilters {
-  type?: string;
-  status?: string;
-  currency?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  statuses?: string[];
+  categories?: string[];
+  currencies?: string[];
 }
 
 export async function saveTransactionFilters(filters: StoredFilters): Promise<void> {
@@ -56,7 +58,10 @@ export async function saveTransactionFilters(filters: StoredFilters): Promise<vo
 export async function loadTransactionFilters(): Promise<StoredFilters | null> {
   try {
     const stored = await AsyncStorage.getItem(KEYS.TRANSACTION_FILTERS);
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    const parsed = JSON.parse(stored) as unknown;
+    if (!parsed || typeof parsed !== 'object') return null;
+    return parsed as StoredFilters;
   } catch (error) {
     console.error('Failed to load transaction filters:', error);
     return null;
