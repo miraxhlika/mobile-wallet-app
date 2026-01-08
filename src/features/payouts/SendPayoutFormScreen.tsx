@@ -39,8 +39,18 @@ type DestinationKind = "beneficiary" | "custom";
 const FALLBACK_CURRENCIES = ["EUR", "USD", "GBP"] as const;
 
 const MOCK_BENEFICIARIES: Beneficiary[] = [
-  { id: "ben_1", name: "Alex Johnson", account: "alex.johnson@example.com", label: "Personal" },
-  { id: "ben_2", name: "Native Teams LTD", account: "NTL-REF-102938", label: "Business" },
+  {
+    id: "ben_1",
+    name: "Alex Johnson",
+    account: "alex.johnson@example.com",
+    label: "Personal",
+  },
+  {
+    id: "ben_2",
+    name: "Native Teams LTD",
+    account: "NTL-REF-102938",
+    label: "Business",
+  },
   { id: "ben_3", name: "Sara Ahmed", account: "sara.ahmed@example.com" },
 ];
 
@@ -67,7 +77,9 @@ function formatAccountHint(account: string): string {
   return `${account.slice(0, 4)}…${account.slice(-4)}`;
 }
 
-export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) {
+export function SendPayoutFormScreen({
+  navigation,
+}: SendPayoutFormScreenProps) {
   const { balances } = useBalances();
 
   useLayoutEffect(() => {
@@ -97,17 +109,24 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
   }, [balances]);
 
   const defaultCurrency = useMemo(() => {
-    return currencyOptions.includes("EUR") ? "EUR" : currencyOptions[0] ?? "EUR";
+    return currencyOptions.includes("EUR")
+      ? "EUR"
+      : currencyOptions[0] ?? "EUR";
   }, [currencyOptions]);
 
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState<string>(defaultCurrency);
 
-  const [destinationKind, setDestinationKind] = useState<DestinationKind>("beneficiary");
-  const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string>(MOCK_BENEFICIARIES[0]?.id ?? "");
+  const [destinationKind, setDestinationKind] =
+    useState<DestinationKind>("beneficiary");
+  const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string>(
+    MOCK_BENEFICIARIES[0]?.id ?? ""
+  );
 
   const selectedBeneficiary = useMemo(() => {
-    return MOCK_BENEFICIARIES.find((b) => b.id === selectedBeneficiaryId) ?? null;
+    return (
+      MOCK_BENEFICIARIES.find((b) => b.id === selectedBeneficiaryId) ?? null
+    );
   }, [selectedBeneficiaryId]);
 
   const [recipientName, setRecipientName] = useState("");
@@ -128,15 +147,24 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
   const validation = useMemo(() => {
     const amountNum = parsePositiveAmount(amount);
 
-    const errors: Partial<Record<
-      "amount" | "currency" | "destination" | "recipientName" | "recipientAccount",
-      string
-    >> = {};
+    const errors: Partial<
+      Record<
+        | "amount"
+        | "currency"
+        | "destination"
+        | "recipientName"
+        | "recipientAccount",
+        string
+      >
+    > = {};
 
     if (!amount.trim()) errors.amount = "Amount is required.";
-    else if (amountNum === null || amountNum <= 0) errors.amount = "Enter a positive amount.";
+    else if (amountNum === null || amountNum <= 0)
+      errors.amount = "Enter a positive amount.";
     else if (availableBalance !== null && amountNum > availableBalance) {
-      errors.amount = `Insufficient balance. Available: ${availableBalance.toFixed(2)} ${currency}.`;
+      errors.amount = `Insufficient balance. Available: ${availableBalance.toFixed(
+        2
+      )} ${currency}.`;
     }
 
     if (!currency) errors.currency = "Currency is required.";
@@ -144,24 +172,39 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
     if (destinationKind === "beneficiary") {
       if (!selectedBeneficiary) errors.destination = "Select a beneficiary.";
     } else {
-      if (!recipientName.trim()) errors.recipientName = "Recipient name is required.";
-      if (!recipientAccount.trim()) errors.recipientAccount = "Destination is required.";
+      if (!recipientName.trim())
+        errors.recipientName = "Recipient name is required.";
+      if (!recipientAccount.trim())
+        errors.recipientAccount = "Destination is required.";
     }
 
     const isValid = Object.keys(errors).length === 0;
     return { errors, isValid };
-  }, [amount, availableBalance, currency, destinationKind, recipientAccount, recipientName, selectedBeneficiary]);
+  }, [
+    amount,
+    availableBalance,
+    currency,
+    destinationKind,
+    recipientAccount,
+    recipientName,
+    selectedBeneficiary,
+  ]);
 
   const resolvedRecipient = useMemo(() => {
     if (destinationKind === "beneficiary" && selectedBeneficiary) {
-      return { name: selectedBeneficiary.name, account: selectedBeneficiary.account };
+      return {
+        name: selectedBeneficiary.name,
+        account: selectedBeneficiary.account,
+      };
     }
     return { name: recipientName.trim(), account: recipientAccount.trim() };
   }, [destinationKind, recipientAccount, recipientName, selectedBeneficiary]);
 
   const destinationLabel = useMemo(() => {
     if (destinationKind === "beneficiary" && selectedBeneficiary) {
-      return `${selectedBeneficiary.name} • ${formatAccountHint(selectedBeneficiary.account)}`;
+      return `${selectedBeneficiary.name} • ${formatAccountHint(
+        selectedBeneficiary.account
+      )}`;
     }
     return "Custom destination";
   }, [destinationKind, selectedBeneficiary]);
@@ -179,7 +222,14 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
     };
 
     navigation.navigate("SendPayoutReview", { payoutData });
-  }, [amount, currency, navigation, note, resolvedRecipient, validation.isValid]);
+  }, [
+    amount,
+    currency,
+    navigation,
+    note,
+    resolvedRecipient,
+    validation.isValid,
+  ]);
 
   const handlePickBeneficiary = useCallback((id: string) => {
     setSelectedBeneficiaryId(id);
@@ -193,7 +243,10 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
   }, []);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#222222" }} edges={["bottom"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#222222" }}
+      edges={["bottom"]}
+    >
       <View className="flex-1 bg-bg">
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -214,6 +267,8 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
                   placeholder="0.00"
                   placeholderTextColor="#9E9FA6"
                   keyboardType="decimal-pad"
+                  accessibilityLabel="Payout amount"
+                  accessibilityHint="Enter the amount you want to send"
                   className={cn(
                     "flex-1 bg-surface border border-border rounded-md px-4 py-3",
                     "text-text-primary text-[20px] font-semibold"
@@ -230,7 +285,12 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
                         accessibilityRole="button"
                         accessibilityLabel={`Select currency ${c}`}
                       >
-                        <AppText variant="label" className={cn(active ? "text-primary" : "text-text-secondary")}>
+                        <AppText
+                          variant="label"
+                          className={cn(
+                            active ? "text-primary" : "text-text-secondary"
+                          )}
+                        >
                           {c}
                         </AppText>
                       </Pressable>
@@ -284,6 +344,7 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
                       placeholder="John Doe"
                       placeholderTextColor="#9E9FA6"
                       autoCapitalize="words"
+                      accessibilityLabel="Recipient name"
                       className="bg-surface border border-border rounded-md px-4 py-3 text-text-primary"
                     />
                     {attemptedSubmit && validation.errors.recipientName ? (
@@ -304,6 +365,8 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
                       placeholderTextColor="#9E9FA6"
                       autoCapitalize="none"
                       autoCorrect={false}
+                      accessibilityLabel="Recipient destination"
+                      accessibilityHint="Enter an account identifier or email"
                       className="bg-surface border border-border rounded-md px-4 py-3 text-text-primary"
                     />
                     {attemptedSubmit && validation.errors.recipientAccount ? (
@@ -319,7 +382,10 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
             {/* Note */}
             <Card>
               <AppText variant="label" className="mb-2">
-                Note <AppText variant="caption" className="text-text-secondary">(optional)</AppText>
+                Note{" "}
+                <AppText variant="caption" className="text-text-secondary">
+                  (optional)
+                </AppText>
               </AppText>
               <TextInput
                 value={note}
@@ -328,6 +394,7 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
                 placeholderTextColor="#9E9FA6"
                 multiline
                 numberOfLines={3}
+                accessibilityLabel="Payout note"
                 className="bg-surface border border-border rounded-md px-4 py-3 text-text-primary"
                 style={{ minHeight: 96, textAlignVertical: "top" }}
               />
@@ -355,12 +422,17 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
             className="flex-1 bg-black/60 justify-end"
             onPress={() => setDestinationSheetOpen(false)}
           >
-            <Pressable className="bg-surface rounded-t-lg p-5" onPress={() => {}}>
+            <Pressable
+              className="bg-surface rounded-t-lg p-5"
+              onPress={() => {}}
+            >
               <AppText variant="title">Select destination</AppText>
 
               <View className="mt-4 gap-2">
                 {MOCK_BENEFICIARIES.map((b) => {
-                  const active = destinationKind === "beneficiary" && b.id === selectedBeneficiaryId;
+                  const active =
+                    destinationKind === "beneficiary" &&
+                    b.id === selectedBeneficiaryId;
                   return (
                     <Pressable
                       key={b.id}
@@ -373,7 +445,10 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
                       <View className="flex-row items-center justify-between">
                         <View className="flex-1 pr-3">
                           <AppText variant="label">{b.name}</AppText>
-                          <AppText variant="caption" className="mt-1 text-text-secondary">
+                          <AppText
+                            variant="caption"
+                            className="mt-1 text-text-secondary"
+                          >
                             {b.label ? `${b.label} • ` : ""}
                             {formatAccountHint(b.account)}
                           </AppText>
@@ -392,13 +467,18 @@ export function SendPayoutFormScreen({ navigation }: SendPayoutFormScreenProps) 
                   onPress={handlePickCustom}
                   className={cn(
                     "border border-border rounded-md px-4 py-3",
-                    destinationKind === "custom" ? "bg-primary/20" : "bg-surface-elevated"
+                    destinationKind === "custom"
+                      ? "bg-primary/20"
+                      : "bg-surface-elevated"
                   )}
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-1 pr-3">
                       <AppText variant="label">Custom destination</AppText>
-                      <AppText variant="caption" className="mt-1 text-text-secondary">
+                      <AppText
+                        variant="caption"
+                        className="mt-1 text-text-secondary"
+                      >
                         Enter recipient details manually
                       </AppText>
                     </View>

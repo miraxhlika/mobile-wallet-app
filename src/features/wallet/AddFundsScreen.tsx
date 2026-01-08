@@ -116,6 +116,8 @@ export function AddFundsScreen({ navigation }: AddFundsScreenProps) {
                   placeholder="0.00"
                   placeholderTextColor="#9E9FA6"
                   keyboardType="decimal-pad"
+                  accessibilityLabel="Add funds amount"
+                  accessibilityHint="Enter the amount you want to add"
                   className={cn(
                     "flex-1 bg-surface border border-border rounded-md px-4 py-3",
                     "text-text-primary text-[20px] font-semibold"

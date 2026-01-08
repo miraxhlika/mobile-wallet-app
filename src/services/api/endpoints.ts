@@ -25,6 +25,8 @@ import type {
   CreatePayoutResponseApi,
 } from "../../types";
 
+type PaginationMode = "auto" | "cursor" | "page";
+
 // Currency mapping for the mock server (currency_id -> ISO code)
 const CURRENCY_ID_TO_CODE: Record<number, string> = {
   1: "USD",
@@ -52,7 +54,9 @@ function asString(value: unknown): string | undefined {
 }
 
 function asNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 function asBoolean(value: unknown): boolean | undefined {
@@ -61,6 +65,29 @@ function asBoolean(value: unknown): boolean | undefined {
 
 function asArray(value: unknown): unknown[] | undefined {
   return Array.isArray(value) ? value : undefined;
+}
+
+function looksLikeMockTransactionsEnvelope(
+  raw: unknown
+): raw is TransactionsResponseApi {
+  if (!isRecord(raw)) return false;
+  const data = raw["data"];
+  if (!isRecord(data)) return false;
+  return (
+    typeof data["current_page"] === "number" &&
+    typeof data["per_page"] === "number" &&
+    Array.isArray(data["items"])
+  );
+}
+
+function isProbablyMockServerBaseUrl(baseUrl: string): boolean {
+  const s = (baseUrl || "").toLowerCase();
+  // Default mock server runs on :3000; developers may use localhost/LAN IP.
+  if (!s) return false;
+  if (s.includes("localhost")) return true;
+  if (s.includes("127.0.0.1")) return true;
+  if (s.match(/:\s*3000\b/)) return true;
+  return false;
 }
 
 function toMoneyString(value: number): string {
@@ -185,9 +212,11 @@ function parseTransactionsResponse(raw: unknown): {
   hasMore: boolean;
   items: TransactionApi[];
 } {
-  if (!isRecord(raw)) return { page: 1, perPage: 15, hasMore: false, items: [] };
+  if (!isRecord(raw))
+    return { page: 1, perPage: 15, hasMore: false, items: [] };
   const data = raw["data"];
-  if (!isRecord(data)) return { page: 1, perPage: 15, hasMore: false, items: [] };
+  if (!isRecord(data))
+    return { page: 1, perPage: 15, hasMore: false, items: [] };
 
   const page = asNumber(data["current_page"]) ?? 1;
   const perPage = asNumber(data["per_page"]) ?? 15;
@@ -251,6 +280,133 @@ function parseTransactionsResponse(raw: unknown): {
   return { page, perPage, hasMore, items };
 }
 
+function parseCursorLikeTransactionsResponse(raw: unknown): {
+  items: unknown[];
+  nextCursor: string | null;
+  hasMore: boolean;
+} {
+  if (!isRecord(raw)) return { items: [], nextCursor: null, hasMore: false };
+
+  const data = raw["data"];
+  const dataRecord = isRecord(data) ? data : null;
+
+  // items may live in:
+  // - { data: [...] }
+  // - { data: { items: [...] } }
+  // - { items: [...] }
+  const items = (asArray(data) ??
+    (dataRecord ? asArray(dataRecord["items"]) : undefined) ??
+    asArray(raw["items"]) ??
+    []) as unknown[];
+
+  const nextCursor =
+    asString(raw["nextCursor"]) ??
+    asString(raw["next_cursor"]) ??
+    (dataRecord
+      ? asString(dataRecord["nextCursor"]) ??
+        asString(dataRecord["next_cursor"])
+      : undefined) ??
+    null;
+
+  const hasMore =
+    asBoolean(raw["hasMore"]) ??
+    asBoolean(raw["has_more"]) ??
+    (dataRecord
+      ? asBoolean(dataRecord["hasMore"]) ?? asBoolean(dataRecord["has_more"])
+      : undefined) ??
+    (nextCursor ? true : false);
+
+  return { items, nextCursor, hasMore };
+}
+
+function mapStagingLikeToDomain(item: unknown): Transaction | null {
+  if (!isRecord(item)) return null;
+
+  // If it looks like the mock server shape, use the existing mapping.
+  if (
+    typeof item["wallet_id"] === "number" &&
+    typeof item["currency_id"] === "number" &&
+    typeof item["amount"] === "number" &&
+    typeof item["reason"] === "string" &&
+    typeof item["type"] === "string" &&
+    typeof item["status"] === "string" &&
+    typeof item["created_at"] === "string"
+  ) {
+    return mapTransactionApiToDomain(item as unknown as TransactionApi);
+  }
+
+  // Otherwise, try to accept a domain-like transaction shape (staging API).
+  // NOTE: This is intentionally defensive: if required fields are missing, we drop the item.
+  const idRaw = item["id"];
+  const id =
+    typeof idRaw === "string"
+      ? idRaw
+      : typeof idRaw === "number" && Number.isFinite(idRaw)
+      ? String(idRaw)
+      : undefined;
+
+  const typeRaw = item["type"];
+  const statusRaw = item["status"];
+  const currency = asString(item["currency"]);
+
+  const createdAt = asString(item["createdAt"]) ?? asString(item["created_at"]);
+  const updatedAt =
+    asString(item["updatedAt"]) ?? asString(item["updated_at"]) ?? createdAt;
+
+  const description =
+    asString(item["description"]) ?? asString(item["reason"]) ?? "";
+
+  // Amount can be number or string; normalize to 2dp string.
+  const amountStr =
+    typeof item["amount"] === "string"
+      ? item["amount"]
+      : typeof item["amount"] === "number" && Number.isFinite(item["amount"])
+      ? toMoneyString(Math.abs(item["amount"]))
+      : undefined;
+
+  const type =
+    typeRaw === "credit" ||
+    typeRaw === "debit" ||
+    typeRaw === "payout" ||
+    typeRaw === "refund"
+      ? (typeRaw as Transaction["type"])
+      : undefined;
+
+  const status =
+    statusRaw === "pending" ||
+    statusRaw === "completed" ||
+    statusRaw === "failed" ||
+    statusRaw === "cancelled"
+      ? (statusRaw as Transaction["status"])
+      : undefined;
+
+  if (
+    !id ||
+    !type ||
+    !status ||
+    !amountStr ||
+    !currency ||
+    !createdAt ||
+    !updatedAt
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    type,
+    status,
+    amount: amountStr,
+    currency,
+    description,
+    createdAt,
+    updatedAt,
+    metadata: isRecord(item["metadata"])
+      ? (item["metadata"] as Record<string, unknown>)
+      : { raw: item },
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Balances
 // ─────────────────────────────────────────────────────────────────────────────
@@ -270,54 +426,144 @@ interface FetchTransactionsParams {
   cursor?: string;
   limit?: number;
   filters?: TransactionFilters;
+  /**
+   * Pagination mode:
+   * - cursor: /transactions?cursor=...&limit=...
+   * - page:   /transactions?page=...&per_page=... (mock server)
+   * - auto:   chooses based on EXPO_PUBLIC_API_PAGINATION_MODE or base URL heuristics
+   */
+  paginationMode?: PaginationMode;
 }
 
 export async function fetchTransactions(
   params: FetchTransactionsParams = {}
 ): Promise<PaginatedTransactionsResponse> {
-  const { cursor, limit = 10, filters } = params;
+  const { cursor, limit = 10, filters, paginationMode = "auto" } = params;
 
-  const pageNum = cursor ? Number.parseInt(cursor, 10) : 1;
-  const page = Number.isFinite(pageNum) && pageNum > 0 ? pageNum : 1;
+  const safeLimit = Math.max(1, Math.min(limit, 50)); // defensive: never request > 50
 
-  const perPage = Math.max(1, Math.min(limit, 50)); // defensive
+  const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || "";
+  const envModeRaw = (
+    process.env.EXPO_PUBLIC_API_PAGINATION_MODE || ""
+  ).toLowerCase();
+  type ConcretePaginationMode = Exclude<PaginationMode, "auto">;
+  const envMode: ConcretePaginationMode | undefined =
+    envModeRaw === "cursor"
+      ? "cursor"
+      : envModeRaw === "page"
+      ? "page"
+      : undefined;
 
-  // Mock server supports: page, per_page, wallet_id, type, status, date_from, date_to, search
-  const query: Record<string, string> = {
-    page: String(page),
-    per_page: String(perPage),
+  const mode: ConcretePaginationMode =
+    paginationMode === "auto"
+      ? envMode ?? (isProbablyMockServerBaseUrl(baseUrl) ? "page" : "cursor")
+      : (paginationMode as ConcretePaginationMode);
+
+  const buildCommonFilters = (): Record<string, string> => {
+    const query: Record<string, string> = {};
+    if (filters?.walletIds?.length)
+      query.wallet_id = filters.walletIds.join(",");
+    if (filters?.types?.length) query.type = filters.types.join(",");
+    if (filters?.statuses?.length) query.status = filters.statuses.join(",");
+    if (filters?.dateFrom) query.date_from = filters.dateFrom;
+    if (filters?.dateTo) query.date_to = filters.dateTo;
+    if (filters?.search) query.search = filters.search;
+    return query;
   };
 
-  if (filters?.walletIds?.length) query.wallet_id = filters.walletIds.join(",");
-  if (filters?.types?.length) query.type = filters.types.join(",");
-  if (filters?.statuses?.length) query.status = filters.statuses.join(",");
-  if (filters?.dateFrom) query.date_from = filters.dateFrom;
-  if (filters?.dateTo) query.date_to = filters.dateTo;
-  if (filters?.search) query.search = filters.search;
+  const requestPageMode = async (): Promise<PaginatedTransactionsResponse> => {
+    const pageNum = cursor ? Number.parseInt(cursor, 10) : 1;
+    const page = Number.isFinite(pageNum) && pageNum > 0 ? pageNum : 1;
 
-  const qs = Object.entries(query)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join("&");
+    const query: Record<string, string> = {
+      page: String(page),
+      per_page: String(safeLimit),
+      ...buildCommonFilters(),
+    };
 
-  const raw = await api.get<unknown>(`/transactions?${qs}`);
-  const parsed = parseTransactionsResponse(raw as TransactionsResponseApi);
+    const qs = Object.entries(query)
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join("&");
 
-  const domainItems = parsed.items.map(mapTransactionApiToDomain);
-  const hasMore = parsed.hasMore;
-  const nextCursor = hasMore ? String(parsed.page + 1) : null;
+    const raw = await api.get<unknown>(`/transactions?${qs}`);
+    const parsed = parseTransactionsResponse(raw as TransactionsResponseApi);
 
-  return {
-    data: domainItems,
-    nextCursor,
-    hasMore,
+    const domainItems = parsed.items.map(mapTransactionApiToDomain);
+    const hasMore = parsed.hasMore;
+    const nextCursor = hasMore ? String(parsed.page + 1) : null;
+
+    return { data: domainItems, nextCursor, hasMore };
   };
+
+  const requestCursorMode =
+    async (): Promise<PaginatedTransactionsResponse> => {
+      // Even if the caller forces "cursor" mode, the local mock server is page/per_page-based.
+      // If we know we're pointed at the mock server, use the page adapter to avoid page-1 repeats.
+      if (isProbablyMockServerBaseUrl(baseUrl)) {
+        return await requestPageMode();
+      }
+
+      const query: Record<string, string> = {
+        // Staging cursor pagination uses: /transactions?cursor=...&limit=...
+        limit: String(safeLimit),
+        ...buildCommonFilters(),
+      };
+      if (cursor) query.cursor = cursor;
+
+      const qs = Object.entries(query)
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join("&");
+
+      const raw = await api.get<unknown>(`/transactions?${qs}`);
+
+      // If we accidentally hit the mock server in cursor mode, the response will be mock-shaped.
+      if (looksLikeMockTransactionsEnvelope(raw)) {
+        // IMPORTANT: the mock server paginates ONLY via page/per_page.
+        // If we keep requesting with ?cursor=..., it will keep returning page=1, causing duplicate items/keys.
+        return await requestPageMode();
+      }
+
+      const parsed = parseCursorLikeTransactionsResponse(raw);
+      const domainItems = parsed.items
+        .map(mapStagingLikeToDomain)
+        .filter((x): x is Transaction => Boolean(x));
+
+      return {
+        data: domainItems,
+        nextCursor: parsed.nextCursor,
+        hasMore: parsed.hasMore,
+      };
+    };
+
+  if (mode === "page") return await requestPageMode();
+
+  // Cursor mode with safe fallback to page/per_page if staging endpoint rejects cursor params.
+  try {
+    return await requestCursorMode();
+  } catch (e) {
+    const err = e as ApiError;
+    if (
+      err?.type === "http" &&
+      (err.statusCode === 400 ||
+        err.statusCode === 404 ||
+        err.statusCode === 422)
+    ) {
+      return await requestPageMode();
+    }
+    throw e;
+  }
 }
 
 export async function fetchTransactionById(id: string): Promise<Transaction> {
   // Mock server does not expose /transactions/:id. Fetch pages until found.
-  let cursor: string | undefined = "1";
-  for (let i = 0; i < 10; i++) {
-    const page = await fetchTransactions({ cursor, limit: 50 });
+  let cursor: string | undefined = undefined;
+  let remaining = 50;
+  for (let i = 0; i < 10 && remaining > 0; i++) {
+    const page = await fetchTransactions({
+      cursor,
+      limit: Math.min(50, remaining),
+    });
+    remaining -= page.data.length;
     const found = page.data.find((t) => t.id === id);
     if (found) return found;
     if (!page.hasMore || !page.nextCursor) break;
@@ -336,7 +582,9 @@ export async function fetchTransactionById(id: string): Promise<Transaction> {
 // Payouts
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function createPayout(data: PayoutRequest): Promise<PayoutResponse> {
+export async function createPayout(
+  data: PayoutRequest
+): Promise<PayoutResponse> {
   const amountNum = Number.parseFloat(data.amount);
   const amount = Number.isFinite(amountNum) ? amountNum : NaN;
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -360,7 +608,8 @@ export async function createPayout(data: PayoutRequest): Promise<PayoutResponse>
 
   // Parse response defensively
   const envelope = raw as CreatePayoutResponseApi;
-  const responseData = isRecord(envelope) && isRecord(envelope.data) ? envelope.data : null;
+  const responseData =
+    isRecord(envelope) && isRecord(envelope.data) ? envelope.data : null;
 
   const payoutId =
     responseData && asNumber(responseData["id"]) !== undefined
@@ -393,7 +642,10 @@ export async function createPayout(data: PayoutRequest): Promise<PayoutResponse>
 // Auth
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function login(email: string, password: string): Promise<AuthTokens> {
+export async function login(
+  email: string,
+  password: string
+): Promise<AuthTokens> {
   const raw = await api.post<unknown>(
     "/auth/login",
     { email, password },
@@ -426,4 +678,3 @@ export async function login(email: string, password: string): Promise<AuthTokens
 
   return { accessToken, refreshToken, expiresAt };
 }
-

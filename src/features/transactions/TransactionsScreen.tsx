@@ -6,7 +6,7 @@
  * - Adds a Filter sheet (status/date stub)
  */
 
-import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -23,6 +23,7 @@ import type {
 } from "../../types";
 import { AppText, ErrorState, HIT_SLOP_44, Pill } from "../../components";
 import { ChevronLeftIcon, FilterIcon } from "../../components/icons";
+import { clearTransactionFilters, loadTransactionFilters, saveTransactionFilters } from "../../storage/asyncStorage";
 import { useInfiniteTransactions } from "./hooks";
 import {
   TransactionRow,
@@ -31,6 +32,38 @@ import {
   groupTransactionsByMonth,
   type TransactionsFilterState,
 } from "./components";
+
+function normalizeStoredFilters(
+  stored: Awaited<ReturnType<typeof loadTransactionFilters>>
+): TransactionsFilterState | null {
+  if (!stored) return null;
+
+  const statuses = Array.isArray(stored.statuses)
+    ? stored.statuses.filter(
+        (s): s is TransactionsFilterState["statuses"][number] =>
+          s === "pending" || s === "completed" || s === "failed" || s === "cancelled"
+      )
+    : [];
+
+  const categories = Array.isArray(stored.categories)
+    ? stored.categories.filter(
+        (c): c is TransactionsFilterState["categories"][number] =>
+          c === "in" || c === "out" || c === "fees"
+      )
+    : [];
+
+  const currencies = Array.isArray(stored.currencies)
+    ? stored.currencies.filter(
+        (c): c is TransactionsFilterState["currencies"][number] =>
+          c === "USD" || c === "EUR" || c === "GBP"
+      )
+    : [];
+
+  const dateFrom = typeof stored.dateFrom === "string" ? stored.dateFrom : undefined;
+  const dateTo = typeof stored.dateTo === "string" ? stored.dateTo : undefined;
+
+  return { statuses, categories, currencies, dateFrom, dateTo };
+}
 
 function applyClientFilters(
   list: Transaction[],
@@ -76,6 +109,40 @@ export function TransactionsScreen({ navigation }: TransactionsScreenProps) {
     categories: [],
     currencies: [],
   });
+
+  // Hydrate persisted filters once on screen mount.
+  useEffect(() => {
+    let cancelled = false;
+    loadTransactionFilters()
+      .then((stored) => {
+        if (cancelled) return;
+        const next = normalizeStoredFilters(stored);
+        if (next) setFilters(next);
+      })
+      .catch(() => {
+        // ignore (storage failure should not block the UI)
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleApplyFilters = useCallback((next: TransactionsFilterState) => {
+    setFilters(next);
+    void saveTransactionFilters({
+      statuses: next.statuses,
+      categories: next.categories,
+      currencies: next.currencies,
+      dateFrom: next.dateFrom,
+      dateTo: next.dateTo,
+    });
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    const cleared: TransactionsFilterState = { statuses: [], categories: [], currencies: [] };
+    setFilters(cleared);
+    void clearTransactionFilters();
+  }, []);
 
   const apiFilters = useMemo<TransactionFilters | undefined>(() => {
     const next: TransactionFilters = {};
@@ -225,8 +292,8 @@ export function TransactionsScreen({ navigation }: TransactionsScreenProps) {
             visible={filterOpen}
             value={filters}
             onClose={() => setFilterOpen(false)}
-            onApply={setFilters}
-            onClear={() => setFilters({ statuses: [], categories: [], currencies: [] })}
+            onApply={handleApplyFilters}
+            onClear={handleClearFilters}
           />
         </View>
       </SafeAreaView>
@@ -360,8 +427,8 @@ export function TransactionsScreen({ navigation }: TransactionsScreenProps) {
           visible={filterOpen}
           value={filters}
           onClose={() => setFilterOpen(false)}
-          onApply={setFilters}
-          onClear={() => setFilters({ statuses: [], categories: [], currencies: [] })}
+          onApply={handleApplyFilters}
+          onClear={handleClearFilters}
         />
       </View>
     </SafeAreaView>
