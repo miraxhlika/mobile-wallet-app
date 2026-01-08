@@ -10,14 +10,22 @@
  */
 
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, Image, RefreshControl, ScrollView, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
 import type { HomeScreenProps } from "../../navigation/types";
-import { AppText, ErrorState } from "../../components";
+import { AppText, ErrorState, HIT_SLOP_44, Pill } from "../../components";
 import { useInfiniteTransactions } from "../transactions";
 import { useBalances } from "./hooks";
+import { useSettingsStore } from "./store";
 import {
   BalanceHeader,
   BankDetailsSheet,
@@ -34,6 +42,8 @@ const MOCK_BANK_DETAILS = {
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
   const [bankDetailsOpen, setBankDetailsOpen] = useState(false);
+  const selectedCurrency = useSettingsStore((s) => s.selectedCurrency);
+  const setSelectedCurrency = useSettingsStore((s) => s.setSelectedCurrency);
 
   const {
     balances,
@@ -55,9 +65,20 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     refetchTransactions();
   }, [refetchBalances, refetchTransactions]);
 
-  const mainBalance = useMemo(() => {
-    return balances.find((b) => b.currency === "EUR") ?? balances[0];
+  const currencyOptions = useMemo(() => {
+    const fromBalances = balances.map((b) => b.currency).filter(Boolean);
+    const unique = Array.from(new Set(fromBalances));
+    // Fallback if balances haven't loaded yet.
+    return unique.length ? unique : ["EUR", "USD", "GBP"];
   }, [balances]);
+
+  const mainBalance = useMemo(() => {
+    return (
+      balances.find((b) => b.currency === selectedCurrency) ??
+      balances.find((b) => b.currency === "EUR") ??
+      balances[0]
+    );
+  }, [balances, selectedCurrency]);
 
   const currencyCode = mainBalance?.currency ?? "EUR";
   const amount = mainBalance?.available ?? "0.00";
@@ -83,9 +104,33 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         <ScrollView
           contentContainerClassName="px-5 pt-4 pb-10 gap-6"
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
           }
         >
+          {/* Currency selector */}
+          {currencyOptions.length > 1 ? (
+            <View className="flex-row flex-wrap justify-center gap-2">
+              {currencyOptions.map((c) => {
+                const active = c === currencyCode;
+                return (
+                  <Pressable
+                    key={c}
+                    onPress={() => void setSelectedCurrency(c)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Select currency ${c}`}
+                    accessibilityState={{ selected: active }}
+                    hitSlop={HIT_SLOP_44}
+                  >
+                    <Pill text={c} tone={active ? "info" : "muted"} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
           <BalanceHeader
             currencyCode={currencyCode}
             amount={amount}
