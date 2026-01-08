@@ -38,6 +38,12 @@ Create a `.env` file in the project root:
 ```env
 # Base URL for the wallet API (required)
 EXPO_PUBLIC_API_BASE_URL=https://api.staging.example.com/v1
+
+# Optional: force pagination mode
+# - cursor: /transactions?cursor=...&limit=... (staging)
+# - page:   /transactions?page=...&per_page=... (mock server)
+# If omitted, the app auto-detects based on base URL heuristics.
+# EXPO_PUBLIC_API_PAGINATION_MODE=cursor
 ```
 
 ### Run locally
@@ -54,13 +60,7 @@ By default the mock server runs on `http://localhost:3000`.
 
 #### 2) Set `.env`
 
-Create your local env file:
-
-```bash
-cp .env.example .env
-```
-
-Set `EXPO_PUBLIC_API_BASE_URL` to the mock server URL.
+Create your local env file manually and set `EXPO_PUBLIC_API_BASE_URL` to the mock server URL.
 
 **Windows + iOS (Expo Go on a physical iPhone):** you must use your machine’s **LAN IP**, not `localhost`, e.g.:
 
@@ -150,8 +150,12 @@ src/
 
 ## API Assumptions
 
-The app talks to the **local mock API server** in `./mock-server` and maps the
-wire shapes into internal domain types (`Balance`, `Transaction`, `Payout*`).
+The app can talk to either:
+
+- the **local mock API server** in `./mock-server` (page/per_page pagination), or
+- a **staging API** (cursor pagination)
+
+The client maps API wire shapes into internal domain types (`Balance`, `Transaction`, `Payout*`).
 
 ### POST /auth/login
 
@@ -211,6 +215,8 @@ The client maps each wallet into a simpler `Balance`:
 
 Query params:
 
+- `cursor` (staging API, cursor pagination)
+- `limit` (staging API)
 - `page` (default: `1`)
 - `per_page` (default: `15`)
 - `wallet_id`
@@ -252,7 +258,9 @@ The client:
 - maps `type: "top-up" | "withdrawal"` into domain types (`credit` / `payout`)
 - maps `amount` into a formatted string
 - derives a stable `id` for seed transactions that have no `id` in the mock data
-- exposes a cursor-like API (`nextCursor`, `hasMore`) on top of `current_page`/`has_more`.
+- exposes a cursor-like API (`nextCursor`, `hasMore`) on top of either:
+  - staging cursor pagination, or
+  - mock server `current_page`/`has_more` paging.
 
 > The mock server does **not** expose `GET /transactions/:id`; the client
 > emulates it by paginating over `/transactions` until it finds the target item.
@@ -298,12 +306,34 @@ The client maps that into the mock server shape (selecting a `wallet_id`,
 
 ## Pagination
 
-- Transactions use cursor-based pagination
-- Default page size: 10 items
-- **Maximum total transactions: 50** (capped to prevent excessive data loading)
-- The app stops fetching more pages when either:
-  - 50 transactions have been loaded
-  - The API returns `hasMore: false`
+- **Staging API**: cursor-based pagination via `GET /transactions?cursor=...&limit=...`
+- **Mock server**: page/per_page pagination via `GET /transactions?page=...&per_page=...`
+- **Default page size**: 20 items
+- **Maximum total transactions**: 50 (hard cap to prevent excessive loading)
+
+> The transactions hook also defensively de-dupes by `id` to prevent React key collisions if a backend overlaps items between pages.
+
+## Offline read-only cache (balances + transactions)
+
+Balances and transactions are cached via React Query and **persisted to AsyncStorage** so the app can render previously fetched data while offline.
+
+- Persistence lives in `src/providers/QueryProvider.tsx` (`PersistQueryClientProvider`)
+- Persisted data:
+  - queries only (successful queries)
+  - max age: 24h
+- Query `networkMode` is `offlineFirst`
+
+## Deep links
+
+The app supports deep links:
+
+- `wallet://tx/{id}` → opens `TransactionDetails` with `transactionId={id}`
+
+Notes:
+
+- **Expo Go limitation**: you generally cannot test custom schemes like `wallet://` in stock Expo Go.
+- **Expo Go workaround**: use Expo’s `exp://.../--/tx/{id}` format.
+- Best test path is a dev client / standalone build.
 
 ## Authentication
 
@@ -317,32 +347,22 @@ The client maps that into the mock server shape (selecting a `wallet_id`,
 ### Implemented (Skeleton)
 
 - [x] App initialization with providers
-- [x] Bottom tab navigation (Home, Transactions, Info)
+- [x] Bottom tab navigation (Home, Cards, Info)
 - [x] Stack navigation for detail screens
 - [x] Secure token storage
 - [x] API client with auth injection
 - [x] Error normalization (network/HTTP/unknown)
-- [x] React Query hooks for data fetching
+- [x] React Query hooks for data fetching + persisted offline read-only cache
 - [x] Zustand stores for global state
 - [x] Toast notification system
 - [x] Home screen with balances and recent activity
+- [x] Currency selector (persisted) on Home
 - [x] Transactions list with infinite scroll
+- [x] Transactions filters (date/status/category/currency) + AsyncStorage persistence
 - [x] Transaction details screen
 - [x] Send payout flow (Form → Review → Success)
 - [x] Add funds screen (UI only)
 - [x] Info & limits screen (static)
-
-### TODO (Future Implementation)
-
-- [ ] Actual API integration
-- [ ] Login/logout flow
-- [ ] Biometric authentication
-- [ ] Pull-to-refresh on all screens
-- [ ] Filter/search transactions
-- [ ] Receipt download
-- [ ] Push notifications
-- [ ] Currency selector
-- [ ] Dark mode support
 
 ## Security Notes
 

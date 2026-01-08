@@ -477,7 +477,7 @@ function TransactionsFilterSheetImpl({
                 disabled={!canApply}
                 fullWidth
                 className="bg-white"
-                textClassName="text-[#222222]"
+                textClassName="text-bg"
               />
               <Button
                 label="Clear all"
