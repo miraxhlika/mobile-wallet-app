@@ -14,6 +14,7 @@ import {
   initialWindowMetrics,
   SafeAreaProvider,
 } from "react-native-safe-area-context";
+import type { LinkingOptions } from "@react-navigation/native";
 import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
@@ -22,6 +23,7 @@ import { ToastProvider } from "../components";
 import { useAuthStore } from "../features/auth";
 import { useSettingsStore } from "../features/wallet";
 import { login } from "../services/api";
+import type { RootStackParamList } from "../navigation/types";
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -38,6 +40,30 @@ const navTheme = {
     border: "rgba(255,255,255,0.10)",
     primary: "#FF2C55",
     notification: "#FF2C55",
+  },
+};
+
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ["wallet://"],
+  config: {
+    screens: {
+      // Deep link: wallet://tx/{id} -> TransactionDetails({ transactionId: id })
+      TransactionDetails: "tx/:transactionId",
+      // Keep other screens defined for completeness (optional)
+      MainTabs: {
+        screens: {
+          Home: "home",
+          Cards: "cards",
+          Info: "info",
+        },
+      },
+      Transactions: "transactions",
+      SendPayoutForm: "send",
+      SendPayoutReview: "send/review",
+      SendPayoutSuccess: "send/success",
+      AddFunds: "add-funds",
+      Limits: "limits",
+    },
   },
 };
 
@@ -88,7 +114,7 @@ export function AppProviders({ children }: AppProvidersProps) {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <QueryProvider>
-          <NavigationContainer theme={navTheme}>
+          <NavigationContainer theme={navTheme} linking={linking}>
             <ToastProvider>
               <HydrationGate>{children}</HydrationGate>
             </ToastProvider>

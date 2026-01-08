@@ -2,6 +2,7 @@
   "expo": {
     "name": "nt-wallet",
     "slug": "nt-wallet",
+    "scheme": "wallet",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/adaptive-icon.png",
@@ -20,6 +21,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#222222"
       },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [{ "scheme": "wallet" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
