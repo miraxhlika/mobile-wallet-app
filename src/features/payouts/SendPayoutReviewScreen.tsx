@@ -1,275 +1,160 @@
 /**
  * Send Payout Review Screen
- * 
- * Second step of the payout flow.
- * Shows summary of payout details for confirmation.
- * Submits payout and navigates to success screen.
- * 
- * TODO:
- * - Add fee breakdown if applicable
- * - Add edit buttons to go back and modify
+ *
+ * Step 2 of payout flow:
+ * - Read-only summary
+ * - Submit via POST /payouts
+ * - Disable double-submit + show loading + handle success/error
  */
 
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useCallback, useLayoutEffect } from "react";
+import { Pressable, ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import type { SendPayoutReviewScreenProps } from '../../navigation/types';
-import { useCreatePayout } from './hooks';
-import { useToast } from '../../components';
+import type { SendPayoutReviewScreenProps } from "../../navigation/types";
+import { AppText, Button, Card, HIT_SLOP_44, useToast } from "../../components";
+import { ChevronLeftIcon } from "../../components/icons";
+import { useCreatePayout } from "./hooks";
 
-export function SendPayoutReviewScreen({
-  route,
-  navigation,
-}: SendPayoutReviewScreenProps) {
+export function SendPayoutReviewScreen({ route, navigation }: SendPayoutReviewScreenProps) {
   const { payoutData } = route.params;
   const { showToast } = useToast();
   const { mutate: createPayout, isPending } = useCreatePayout();
 
-  const handleSubmit = () => {
-    // Prevent double submit
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: "",
+      headerLeft: () => (
+        <Pressable
+          onPress={() => {
+            if (navigation.canGoBack()) navigation.goBack();
+            else navigation.navigate("MainTabs", { screen: "Home" });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={HIT_SLOP_44}
+          className="px-4 py-3"
+        >
+          <ChevronLeftIcon size={26} color="#EFF0F4" />
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
+
+  const handleSubmit = useCallback(() => {
     if (isPending) return;
 
     createPayout(payoutData, {
       onSuccess: (response) => {
-        navigation.replace('SendPayoutSuccess', {
-          payoutId: response.id,
-          amount: payoutData.amount,
-          currency: payoutData.currency,
-        });
+        navigation.replace("SendPayoutSuccess", { payout: response });
       },
       onError: (error) => {
-        showToast(error.message || 'Failed to send payout', 'error');
+        showToast(error.message || "Failed to send payout", "error");
       },
     });
-  };
+  }, [createPayout, isPending, navigation, payoutData, showToast]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* Amount Header */}
-        <View style={styles.amountHeader}>
-          <Text style={styles.sendingLabel}>Sending</Text>
-          <Text style={styles.amount}>
-            {payoutData.amount} {payoutData.currency}
-          </Text>
-        </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#222222" }} edges={["bottom"]}>
+      <View className="flex-1 bg-bg">
+        <ScrollView contentContainerClassName="px-5 pt-5 pb-8 gap-5">
+          <AppText variant="title">Review payout</AppText>
 
-        {/* Details Card */}
-        <View style={styles.detailsCard}>
-          <Text style={styles.sectionTitle}>Payout Details</Text>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Recipient</Text>
-            <Text style={styles.detailValue}>{payoutData.recipientName}</Text>
+          <View className="items-center py-2">
+            <AppText variant="caption" className="text-text-secondary">
+              Sending
+            </AppText>
+            <AppText variant="display" className="mt-2">
+              {payoutData.amount} {payoutData.currency}
+            </AppText>
           </View>
-          
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Account</Text>
-            <Text style={styles.detailValue} numberOfLines={1}>
-              {payoutData.recipientAccount}
-            </Text>
-          </View>
-          
-          {payoutData.description && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Description</Text>
-              <Text style={styles.detailValue}>{payoutData.description}</Text>
+
+          <Card>
+            <AppText variant="label" className="mb-3">
+              Payout details
+            </AppText>
+
+            <View className="gap-3">
+              <View className="flex-row justify-between gap-4">
+                <AppText variant="caption" className="text-text-secondary">
+                  Recipient
+                </AppText>
+                <AppText variant="body" className="text-right">
+                  {payoutData.recipientName}
+                </AppText>
+              </View>
+
+              <View className="flex-row justify-between gap-4">
+                <AppText variant="caption" className="text-text-secondary">
+                  Destination
+                </AppText>
+                <AppText variant="body" className="text-right" numberOfLines={1}>
+                  {payoutData.recipientAccount}
+                </AppText>
+              </View>
+
+              {payoutData.description ? (
+                <View className="flex-row justify-between gap-4">
+                  <AppText variant="caption" className="text-text-secondary">
+                    Note
+                  </AppText>
+                  <AppText variant="body" className="text-right">
+                    {payoutData.description}
+                  </AppText>
+                </View>
+              ) : null}
             </View>
-          )}
+          </Card>
+
+          <Card variant="subtle">
+            <View className="flex-row justify-between">
+              <AppText variant="caption" className="text-text-secondary">
+                Amount
+              </AppText>
+              <AppText variant="body">
+                {payoutData.amount} {payoutData.currency}
+              </AppText>
+            </View>
+            <View className="mt-2 flex-row justify-between">
+              <AppText variant="caption" className="text-text-secondary">
+                Fee
+              </AppText>
+              <AppText variant="body">0.00 {payoutData.currency}</AppText>
+            </View>
+            <View className="mt-3 pt-3 border-t border-border flex-row justify-between">
+              <AppText variant="label">Total</AppText>
+              <AppText variant="label">
+                {payoutData.amount} {payoutData.currency}
+              </AppText>
+            </View>
+          </Card>
+
+          <AppText variant="caption" className="text-center text-text-secondary">
+            By confirming, you authorize this payout from your wallet balance. This action cannot be undone.
+          </AppText>
+        </ScrollView>
+
+        <View className="px-5 pb-5 flex-row gap-3">
+          <View className="flex-1">
+            <Button
+              label="Back"
+              variant="secondary"
+              onPress={() => navigation.goBack()}
+              disabled={isPending}
+              fullWidth
+            />
+          </View>
+          <View className="flex-[2]">
+            <Button
+              label="Confirm & send"
+              onPress={handleSubmit}
+              loading={isPending}
+              disabled={isPending}
+              fullWidth
+            />
+          </View>
         </View>
-
-        {/* Fee Notice Placeholder */}
-        <View style={styles.feeCard}>
-          <View style={styles.feeRow}>
-            <Text style={styles.feeLabel}>Payout amount</Text>
-            <Text style={styles.feeValue}>
-              {payoutData.amount} {payoutData.currency}
-            </Text>
-          </View>
-          <View style={styles.feeRow}>
-            <Text style={styles.feeLabel}>Fee</Text>
-            <Text style={styles.feeValue}>0.00 {payoutData.currency}</Text>
-          </View>
-          <View style={[styles.feeRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>
-              {payoutData.amount} {payoutData.currency}
-            </Text>
-          </View>
-        </View>
-
-        {/* Disclaimer */}
-        <Text style={styles.disclaimer}>
-          By confirming, you authorize this payout from your wallet balance.
-          This action cannot be undone.
-        </Text>
-      </ScrollView>
-
-      {/* Action Buttons */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => navigation.goBack()}
-          disabled={isPending}
-        >
-          <Text style={styles.cancelButtonText}>Back</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.confirmButton, isPending && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={isPending}
-        >
-          {isPending ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.confirmButtonText}>Confirm & Send</Text>
-          )}
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    padding: 16,
-  },
-  amountHeader: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    marginBottom: 16,
-  },
-  sendingLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  amount: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  detailsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  detailValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#111827',
-    maxWidth: '60%',
-    textAlign: 'right',
-  },
-  feeCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  feeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-  },
-  feeLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  feeValue: {
-    fontSize: 14,
-    color: '#111827',
-  },
-  totalRow: {
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    marginTop: 8,
-    paddingTop: 12,
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  totalValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  disclaimer: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  footer: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  confirmButton: {
-    flex: 2,
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    backgroundColor: '#3B82F6',
-  },
-  buttonDisabled: {
-    backgroundColor: '#93C5FD',
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-});
-

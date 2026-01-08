@@ -5,7 +5,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
-import type { PayoutRequest } from '../types';
+import type { PayoutRequest, PayoutResponse } from "../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab Navigator
@@ -27,7 +27,7 @@ export type RootStackParamList = {
   TransactionDetails: { transactionId: string };
   SendPayoutForm: undefined;
   SendPayoutReview: { payoutData: PayoutRequest };
-  SendPayoutSuccess: { payoutId: string; amount: string; currency: string };
+  SendPayoutSuccess: { payout: PayoutResponse };
   AddFunds: undefined;
 };
 

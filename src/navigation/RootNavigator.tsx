@@ -53,12 +53,24 @@ export function RootNavigator() {
       <Stack.Screen
         name="SendPayoutForm"
         component={SendPayoutFormScreen}
-        options={{ title: "Send Payout" }}
+        options={{
+          title: "",
+          headerStyle: { backgroundColor: "#222222" },
+          headerTintColor: "#EFF0F4",
+          headerTitleStyle: { color: "#EFF0F4" },
+          headerShadowVisible: false,
+        }}
       />
       <Stack.Screen
         name="SendPayoutReview"
         component={SendPayoutReviewScreen}
-        options={{ title: "Review Payout" }}
+        options={{
+          title: "",
+          headerStyle: { backgroundColor: "#222222" },
+          headerTintColor: "#EFF0F4",
+          headerTitleStyle: { color: "#EFF0F4" },
+          headerShadowVisible: false,
+        }}
       />
       <Stack.Screen
         name="SendPayoutSuccess"
@@ -67,6 +79,10 @@ export function RootNavigator() {
           title: "Success",
           headerBackVisible: false,
           gestureEnabled: false,
+          headerStyle: { backgroundColor: "#222222" },
+          headerTintColor: "#EFF0F4",
+          headerTitleStyle: { color: "#EFF0F4" },
+          headerShadowVisible: false,
         }}
       />
       <Stack.Screen
